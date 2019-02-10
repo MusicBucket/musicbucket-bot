@@ -8,6 +8,8 @@ from dotenv import load_dotenv
 from telegram import ParseMode
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 
+load_dotenv()
+
 
 # Enable logging
 logging.basicConfig(
@@ -15,7 +17,7 @@ logging.basicConfig(
     level=logging.INFO)
 
 logger = logging.getLogger(__name__)
-load_dotenv()
+
 
 # Setup Database
 db = DB()
@@ -53,7 +55,6 @@ def music(bot, update):
 
 def find_spotify_link_in_text(bot, update):
     """Fins the Spotify link in the text and saves it to the database. It also saves the user if it doesn't exist @ database"""
-    print(update.message)
     parser = spotify.Parser()
     spotify_link = update.message.text
     spotify_link_type = parser.get_link_type(spotify_link)
@@ -68,16 +69,17 @@ def find_spotify_link_in_text(bot, update):
                         firstname=update.message.from_user.first_name)
             db.save_object(user)
         else:
-            print('User already exists')
+            logger.info('User already exists')
 
         # We can't let the user save the same link at the same chat if he already save it within the last week
         if db.check_if_same_link_same_chat_last_week(spotify_link, update.message.chat_id) is False:
             user_chat_link = UserChatLink(chat_id=update.message.chat_id, created_at=datetime.datetime.now(
             ), user_id=user_id, link_type=spotify_link_type.value, link=spotify_link)
             db.save_object(user_chat_link)
-            print('SAVING NEW LINK')
+            logger.info('Saving new link')
         else:
-            print('This user already sent this link in this chat the last week')
+            logger.warn(
+                'This user already sent this link in this chat the last week')
 
 
 def main():

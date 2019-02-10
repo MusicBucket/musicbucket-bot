@@ -67,7 +67,8 @@ class Parser():
             uri = f'spotify:track:{id}'
             track = spotipy_client.track(uri)
             link_info.track = track['name']
-            # TODO: fill artist and album info
+            link_info.album = track['album']['name']
+            link_info.artist = track['artists'][0]['name']
 
         return link_info
 
