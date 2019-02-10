@@ -9,8 +9,8 @@ class Responser():
 
         msg = '<strong>Music from the last week:</strong> \n'
         for user, links in user_links.items():
-            msg += '{} <strong>{}:</strong>\n'.format(emojize(':baby:', use_aliases=True),
-                                                      user.username or user.firstname)
+            msg += '- {} <strong>{}:</strong>\n'.format(emojize(':baby:', use_aliases=True),
+                                                        user.username or user.firstname)
             print('User links: {}'.format(user.links))
             for link in links:
                 print('Link: {}'.format(link))
@@ -25,12 +25,13 @@ class Responser():
 
                 if link_info is not None and link_info != '':
                     if link.link_type == spotify.LinkType.ARTIST.value:
-                        msg += '{} <strong>{}</strong> (Artist): {} @ {} \n'.format(
-                            emojize(':busts_in_silhouette:', use_aliases=True), link_info.artist, link.link, link.created_at.strftime('%d/%m/%Y'))
+                        msg += '{} <strong>{}</strong>: \n{}\n'.format(
+                            emojize(':busts_in_silhouette:', use_aliases=True), link_info.artist, link.link)
                     elif link.link_type == spotify.LinkType.ALBUM.value:
-                        msg += '{} <strong>{}</strong> - <strong>{}</strong> (Album): {} @ {} \n'.format(emojize(':cd:', use_aliases=True), link_info.artist, link_info.album, link.link,
-                                                                                        link.created_at.strftime('%d/%m/%Y'))
+                        msg += '{} <strong>{}</strong> - <strong>{}</strong>: \n{}\n'.format(
+                            emojize(':cd:', use_aliases=True), link_info.artist, link_info.album, link.link)
                     elif link.link_type == spotify.LinkType.TRACK.value:
-                        msg += '{} <strong>{}</strong> by <strong>{}</strong> (Track): {} @ {} \n'.format(emojize(':musical_note:', use_aliases=True), link_info.track, link_info.artist, link.link,
-                                                                                         link.created_at.strftime('%d/%m/%Y'))
+                        msg += '{} <strong>{}</strong> by <strong>{}</strong>: \n{}\n'.format(emojize(
+                            ':musical_note:', use_aliases=True), link_info.track, link_info.artist, link.link)
+            msg += '\n\n'
         return msg
