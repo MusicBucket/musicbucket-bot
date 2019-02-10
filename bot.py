@@ -59,7 +59,7 @@ def find_streaming_link_in_text(bot, update):
     deezer_parser = deezer.DeezerParser()
 
     link = ''
-    link_type = 0
+    link_type = None
     url = utils.extract_url_from_message(update.message.text)
 
     # Check if is a Spotify/Deezer link
