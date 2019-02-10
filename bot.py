@@ -68,7 +68,7 @@ def find_streaming_link_in_text(bot, update):
         link = spotify_parser.clean_url(update.message.text)
     elif deezer_parser.is_deezer_url(update.message.text):
         link_type = deezer_parser.get_link_type(update.message.text)
-        link = spotify_parser.clean_url(update.message.text)
+        link = deezer_parser.clean_url(update.message.text)
 
     # If link was resolved correctly
     if link_type is not None and link_type != 0:

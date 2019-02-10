@@ -54,7 +54,9 @@ class SpotifyParser():
 
     def clean_url(self, url):
         """Receives a Spotify url and returns it cleaned"""
-        return url[:url.rfind('?')]
+        if url.rfind('?') > -1:
+            return url[:url.rfind('?')]
+        return url
 
     def is_spotify_url(self, url):
         """Check if a message contains a Spotify Link"""
