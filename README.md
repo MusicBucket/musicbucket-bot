@@ -4,7 +4,7 @@ A Telegram Bot that collects Spotify links that users send in a chat and shows t
 
 Currently music streaming services supported:
 - [x] Spotify
-- [ ] Deezer
+- [x] Deezer
 - [ ] Tidal
 - [ ] Youtube
 
