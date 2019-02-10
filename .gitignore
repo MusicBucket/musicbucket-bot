@@ -4,3 +4,7 @@ env/
 .env
 
 db.sqlite
+
+app/__pycache__
+db/__pycache__
+music/__pycache__

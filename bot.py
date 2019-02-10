@@ -1,12 +1,13 @@
-from responser import Responser
-from db import DB, User, UserChatLink
-import spotify
-import datetime
-import logging
-from os import getenv as getenv
-from dotenv import load_dotenv
-from telegram import ParseMode
+from app.music import spotify, deezer
+from app.db.db import DB, User, UserChatLink
+from app.responser import Responser
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+from telegram import ParseMode
+from dotenv import load_dotenv
+from os import getenv as getenv
+import logging
+import datetime
+
 
 load_dotenv()
 
@@ -53,14 +54,24 @@ def music(bot, update):
                               parse_mode=ParseMode.HTML)
 
 
-def find_spotify_link_in_text(bot, update):
-    """Fins the Spotify link in the text and saves it to the database. It also saves the user if it doesn't exist @ database"""
-    parser = spotify.Parser()
-    spotify_link = update.message.text
-    spotify_link_type = parser.get_link_type(spotify_link)
+def find_streaming_link_in_text(bot, update):
+    """Fins the streaming link, identifies the streaming service in the text and saves it to the database. It also saves the user if it doesn't exist @ database"""
+    spotify_parser = spotify.SpotifyParser()
+    deezer_parser = deezer.DeezerParser()
 
-    # If the spotify link is correct
-    if spotify_link_type is not None:
+    link = ''
+    link_type = 0
+
+    # Check if is a Spotify/Deezer link
+    if spotify_parser.is_spotify_url(update.message.text):
+        link_type = spotify_parser.get_link_type(update.message.text)
+        link = spotify_parser.clean_url(update.message.text)
+    elif deezer_parser.is_deezer_url(update.message.text):
+        link_type = deezer_parser.get_link_type(update.message.text)
+        link = spotify_parser.clean_url(update.message.text)
+
+    # If link was resolved correctly
+    if link_type is not None and link_type != 0:
         user_id = update.message.from_user.id
 
         # If we didn't store the user yet, we do it now
@@ -72,9 +83,9 @@ def find_spotify_link_in_text(bot, update):
             logger.info('User already exists')
 
         # We can't let the user save the same link at the same chat if he already save it within the last week
-        if db.check_if_same_link_same_chat_last_week(spotify_link, update.message.chat_id) is False:
+        if db.check_if_same_link_same_chat_last_week(link, update.message.chat_id) is False:
             user_chat_link = UserChatLink(chat_id=update.message.chat_id, created_at=datetime.datetime.now(
-            ), user_id=user_id, link_type=spotify_link_type.value, link=spotify_link)
+            ), user_id=user_id, link_type=link_type.value, link=link)
             db.save_object(user_chat_link)
             logger.info('Saving new link')
         else:
@@ -96,7 +107,7 @@ def main():
 
     # Non command handlers
     dispatcher.add_handler(MessageHandler(
-        Filters.text, find_spotify_link_in_text))
+        Filters.text, find_streaming_link_in_text))
 
     # Log
     dispatcher.add_error_handler(error)
