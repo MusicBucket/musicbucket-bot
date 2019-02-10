@@ -5,12 +5,11 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from telegram import ParseMode
 from dotenv import load_dotenv
 from os import getenv as getenv
+import app.util.utils as utils
 import logging
 import datetime
 
-
 load_dotenv()
-
 
 # Enable logging
 logging.basicConfig(
@@ -61,14 +60,15 @@ def find_streaming_link_in_text(bot, update):
 
     link = ''
     link_type = 0
+    url = utils.extract_url_from_message(update.message.text)
 
     # Check if is a Spotify/Deezer link
-    if spotify_parser.is_spotify_url(update.message.text):
-        link_type = spotify_parser.get_link_type(update.message.text)
-        link = spotify_parser.clean_url(update.message.text)
-    elif deezer_parser.is_deezer_url(update.message.text):
-        link_type = deezer_parser.get_link_type(update.message.text)
-        link = deezer_parser.clean_url(update.message.text)
+    if spotify_parser.is_spotify_url(url):
+        link_type = spotify_parser.get_link_type(url)
+        link = spotify_parser.clean_url(url)
+    elif deezer_parser.is_deezer_url(url):
+        link_type = deezer_parser.get_link_type(url)
+        link = deezer_parser.clean_url(url)
 
     # If link was resolved correctly
     if link_type is not None and link_type != 0:
