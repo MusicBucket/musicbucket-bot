@@ -75,6 +75,7 @@ def find_spotify_link_in_text(bot, update):
             user_chat_link = UserChatLink(chat_id=update.message.chat_id, created_at=datetime.datetime.now(
             ), user_id=user_id, link_type=spotify_link_type.value, link=spotify_link)
             db.save_object(user_chat_link)
+            print('SAVING NEW LINK')
         else:
             print('This user already sent this link in this chat the last week')
 

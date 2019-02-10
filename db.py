@@ -52,9 +52,11 @@ class DB:
         logger.info(
             'Checking if this user already saved this link in the same chat.')
         session = self.sessionmaker()
-        return session.query(exists().where(UserChatLink.chat_id == chat_id and
-                                            UserChatLink.link == link and
-                                            UserChatLink.created_at >= datetime.datetime.now() - datetime.timedelta(days=7)))\
+        return session.query(exists()
+                              .where(UserChatLink.chat_id == chat_id)
+                              .where(UserChatLink.link == link)
+                              .where(UserChatLink.created_at >= datetime.datetime.now() - datetime.timedelta(days=7))
+                              )\
             .scalar()
 
     def save_object(self, object):
