@@ -58,17 +58,25 @@ def find_spotify_link_in_text(bot, update):
     spotify_link = update.message.text
     spotify_link_type = parser.get_link_type(spotify_link)
 
+    # If the spotify link is correct
     if spotify_link_type is not None:
         user_id = update.message.from_user.id
 
+        # If we didn't store the user yet, we do it now
         if db.check_if_user_exists(user_id) is False:
             user = User(id=user_id, username=update.message.from_user.username,
                         firstname=update.message.from_user.first_name)
             db.save_object(user)
+        else:
+            print('User already exists')
 
-        user_chat_link = UserChatLink(chat_id=update.message.chat_id, created_at=datetime.datetime.now(
-        ), user_id=user_id, link_type=spotify_link_type.value, link=spotify_link)
-        db.save_object(user_chat_link)
+        # We can't let the user save the same link at the same chat if he already save it within the last week
+        if db.check_if_same_link_same_chat_last_week(spotify_link, update.message.chat_id) is False:
+            user_chat_link = UserChatLink(chat_id=update.message.chat_id, created_at=datetime.datetime.now(
+            ), user_id=user_id, link_type=spotify_link_type.value, link=spotify_link)
+            db.save_object(user_chat_link)
+        else:
+            print('This user already sent this link in this chat the last week')
 
 
 def main():

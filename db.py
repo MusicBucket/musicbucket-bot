@@ -48,6 +48,15 @@ class DB:
         session = self.sessionmaker()
         return session.query(exists().where(User.id == user_id)).scalar()
 
+    def check_if_same_link_same_chat_last_week(self, link, chat_id):
+        logger.info(
+            'Checking if this user already saved this link in the same chat.')
+        session = self.sessionmaker()
+        return session.query(exists().where(UserChatLink.chat_id == chat_id and
+                                            UserChatLink.link == link and
+                                            UserChatLink.created_at >= datetime.datetime.now() - datetime.timedelta(days=7)))\
+            .scalar()
+
     def save_object(self, object):
         session = self.sessionmaker()
         session.add(object)
