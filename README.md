@@ -9,7 +9,8 @@ Currently music streaming services supported:
 - [ ] Youtube
 
 ## Installation
-Copy the .env.example file to .env and fill the variables with your Telegram and Spotify data.
+- Install dependencies from requirements.txt
+- Copy the .env.example file to .env and fill the variables with your Telegram and Spotify data.
 
 ## License
 The content of this project is licensed under the GNU/GPLv3 license. See LICENSE file.
