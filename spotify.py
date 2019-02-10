@@ -37,7 +37,6 @@ class Parser():
     def get_link_type(self, url):
         """Resolves the Spotify link type"""
         if self.__is_spotify_url(url):
-            self.get_link_info(url, LinkType.ARTIST.value)
             if 'artist' in url:
                 return LinkType.ARTIST
             elif 'album' in url:
@@ -52,8 +51,6 @@ class Parser():
             Album: 'spotify:album:id'
             Track: 'spotify:track:id'
         """
-        # uri = ''
-
         # Gets the entity id from the Spotify link: https://open.spotify.com/album/*1yXlpa0dqoQCfucRNUpb8N*?si=GKPFOXTgRq2SLEE-ruNfZQ
         id = url[url.rfind('/')+1:].split('?', 1)[0]
         link_info = LinkInfo(link_type=link_type)

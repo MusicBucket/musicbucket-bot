@@ -6,6 +6,7 @@ class Responser():
     def last_week_links_by_user(self, user_links):
         parser = spotify.Parser()
         msg = '<strong>Music from the last week:</strong> \n'
+        print('USER_LINKS')
         print(user_links)
         for user, links in user_links.items():
             msg += '{} <strong>{}:</strong>\n'.format(emojize(':baby:', use_aliases=True),
