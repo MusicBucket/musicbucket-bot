@@ -88,6 +88,7 @@ class UserChatLink(Base):
     link_type = Column(Integer)
     created_at = Column(DateTime)
     chat_id = Column(String)
+    chat_name = Column(String)
     user_id = Column(Integer, ForeignKey('users.id'))
 
     user = relationship('User', back_populates='links', lazy='joined')
