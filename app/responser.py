@@ -33,5 +33,5 @@ class Responser():
                     elif link.link_type == spotify.LinkType.TRACK.value:
                         msg += '    {} <a href="{}">{} by {}</a>\n'.format(emojize(
                             ':musical_note:', use_aliases=True), link.link, link_info.track, link_info.artist)
-            msg += '\n\n'
+            msg += '\n'
         return msg
