@@ -49,6 +49,4 @@ class DeezerParser():
 
     def is_deezer_url(self, url):
         """Check if a message contains a Deezer link"""
-        if 'www.deezer.com' in url:
-            return True
-        return False
+        return 'www.deezer.com' in url

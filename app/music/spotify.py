@@ -60,6 +60,4 @@ class SpotifyParser():
 
     def is_spotify_url(self, url):
         """Check if a message contains a Spotify Link"""
-        if 'open.spotify.com' in url:
-            return True
-        return False
+        return 'open.spotify.com' in url

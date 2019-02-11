@@ -43,7 +43,7 @@ def error(bot, update, error):
 def music(bot, update):
     """
     Command /music
-    Gets the Spotify links sent by all the users of the chat in the last week
+    Gets the links sent by all the users of the chat in the last week
     """
     responser = Responser()
 
@@ -54,7 +54,7 @@ def music(bot, update):
 
 
 def find_streaming_link_in_text(bot, update):
-    """Fins the streaming link, identifies the streaming service in the text and saves it to the database. It also saves the user if it doesn't exist @ database"""
+    """Finds the streaming link, identifies the streaming service in the text and saves it to the database. It also saves the user if it doesn't exist @ database"""
     spotify_parser = spotify.SpotifyParser()
     deezer_parser = deezer.DeezerParser()
 
