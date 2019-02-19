@@ -6,7 +6,6 @@ Currently music streaming services supported:
 - [x] Spotify
 - [x] Deezer
 - [ ] Tidal
-- [ ] Youtube
 
 ## Installation
 - Install dependencies from requirements.txt
