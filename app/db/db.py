@@ -28,12 +28,12 @@ class DB:
         session = self.sessionmaker()
         return session.query(User).all()
 
-    def get_last_week_links(self, chat_id):
+    def get_links(self, chat_id, days):
         """Returns a dictionary of the users and their links for a specific chat of the last week"""
         logger.info('Getting last week links of chat: {}'.format(chat_id))
         session = self.sessionmaker()
         qry = session.query(UserChatLink)\
-            .filter(UserChatLink.created_at >= datetime.datetime.now() - datetime.timedelta(days=7))\
+            .filter(UserChatLink.created_at >= datetime.datetime.now() - datetime.timedelta(days=days))\
             .filter(UserChatLink.chat_id == chat_id)\
             .order_by(UserChatLink.created_at)\
             .all()
@@ -43,21 +43,23 @@ class DB:
         res = dict(res)
         return res
 
-    def check_if_user_exists(self, user_id):
-        logger.info('Checking if exists. User: {}'.format(user_id))
-        session = self.sessionmaker()
-        return session.query(exists().where(User.id == user_id)).scalar()
-
-    def check_if_same_link_same_chat_last_week(self, link, chat_id):
+    def check_if_same_link_same_chat(self, link, chat_id, days):
         logger.info(
             'Checking if this user already saved this link in the same chat.')
         session = self.sessionmaker()
         return session.query(exists()
                               .where(UserChatLink.chat_id == chat_id)
                               .where(UserChatLink.link == link)
-                              .where(UserChatLink.created_at >= datetime.datetime.now() - datetime.timedelta(days=7))
+                              .where(UserChatLink.created_at >= datetime.datetime.now() - datetime.timedelta(days=days))
                               )\
             .scalar()
+
+    def check_if_user_exists(self, user_id):
+        logger.info('Checking if exists. User: {}'.format(user_id))
+        session = self.sessionmaker()
+        return session.query(exists().where(User.id == user_id)).scalar()
+
+   
 
     def save_object(self, object):
         session = self.sessionmaker()
@@ -86,6 +88,9 @@ class UserChatLink(Base):
     id = Column(Integer, primary_key=True)
     link = Column(String)
     link_type = Column(Integer)
+    artist_name = Column(String)
+    album_name = Column(String)
+    track_name = Column(String)
     created_at = Column(DateTime)
     chat_id = Column(String)
     chat_name = Column(String)

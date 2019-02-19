@@ -47,7 +47,7 @@ def music(bot, update):
     """
     responser = Responser()
 
-    last_week_links = db.get_last_week_links(update.message.chat_id)
+    last_week_links = db.get_links(update.message.chat_id, 7)
     response = responser.last_week_links_by_user(last_week_links)
     update.message.reply_text(response, disable_web_page_preview=True,
                               parse_mode=ParseMode.HTML)
@@ -83,7 +83,7 @@ def find_streaming_link_in_text(bot, update):
             logger.info('User already exists')
 
         # We can't let the user save the same link at the same chat if he already save it within the last week
-        if db.check_if_same_link_same_chat_last_week(link, update.message.chat_id) is False:
+        if db.check_if_same_link_same_chat(link, update.message.chat_id, 7) is False:
             user_chat_link = UserChatLink(chat_id=update.message.chat_id, chat_name=update.message.chat.title or update.message.chat.username or update.message.chat.first_name, created_at=datetime.datetime.now(
             ), user_id=user_id, link_type=link_type.value, link=link)
             db.save_object(user_chat_link)
