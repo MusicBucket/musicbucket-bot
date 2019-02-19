@@ -26,14 +26,14 @@ class DeezerParser():
         # Gets the entity id from the Deezer link:
         id = url[url.rfind('/')+1:]
         link_info = LinkInfo(link_type=link_type)
-        if link_type == LinkType.ARTIST.value:
+        if link_type == LinkType.ARTIST:
             artist = deezer_client.get_artist(id)
             link_info.artist = artist.name
-        elif link_type == LinkType.ALBUM.value:
+        elif link_type == LinkType.ALBUM:
             album = deezer_client.get_album(id)
             link_info.album = album.title
             link_info.artist = album.get_artist().name
-        elif link_type == LinkType.TRACK.value:
+        elif link_type == LinkType.TRACK:
             track = deezer_client.get_track(id)
             link_info.track = track.title
             # link_info.album = track.get_album().title

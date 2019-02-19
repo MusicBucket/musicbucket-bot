@@ -35,16 +35,16 @@ class SpotifyParser():
         # Gets the entity id from the Spotify link: https://open.spotify.com/album/*1yXlpa0dqoQCfucRNUpb8N*?si=GKPFOXTgRq2SLEE-ruNfZQ
         id = url[url.rfind('/')+1:]
         link_info = LinkInfo(link_type=link_type)
-        if link_type == LinkType.ARTIST.value:
+        if link_type == LinkType.ARTIST:
             uri = f'spotify:artist:{id}'
             artist = spotipy_client.artist(uri)
             link_info.artist = artist['name']
-        elif link_type == LinkType.ALBUM.value:
+        elif link_type == LinkType.ALBUM:
             uri = f'spotify:album:{id}'
             album = spotipy_client.album(uri)
             link_info.album = album['name']
             link_info.artist = album['artists'][0]['name']
-        elif link_type == LinkType.TRACK.value:
+        elif link_type == LinkType.TRACK:
             uri = f'spotify:track:{id}'
             track = spotipy_client.track(uri)
             link_info.track = track['name']

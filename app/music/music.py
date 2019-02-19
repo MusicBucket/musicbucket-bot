@@ -3,9 +3,15 @@ from enum import Enum
 
 class LinkType(Enum):
     """Different link types"""
-    ARTIST = 1
-    ALBUM = 2
-    TRACK = 3
+    ARTIST = 0
+    ALBUM = 1
+    TRACK = 2
+
+class StreamingServiceType(Enum):
+    """Available streaming services"""
+    SPOTIFY = 0
+    DEEZER = 1
+
 
 
 class LinkInfo():

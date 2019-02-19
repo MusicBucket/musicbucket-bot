@@ -1,4 +1,5 @@
 from app.music import spotify, deezer
+from app.music.music import LinkType, StreamingServiceType
 from app.db.db import DB, User, UserChatLink
 from app.responser import Responser
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
@@ -60,13 +61,16 @@ def find_streaming_link_in_text(bot, update):
 
     link = ''
     link_type = None
+    streaming_service_type = None
     url = utils.extract_url_from_message(update.message.text)
 
     # Check if is a Spotify/Deezer link
     if spotify_parser.is_spotify_url(url):
+        streaming_service_type = StreamingServiceType.SPOTIFY.value
         link_type = spotify_parser.get_link_type(url)
         link = spotify_parser.clean_url(url)
     elif deezer_parser.is_deezer_url(url):
+        streaming_service_type = StreamingServiceType.DEEZER.value
         link_type = deezer_parser.get_link_type(url)
         link = deezer_parser.clean_url(url)
 
@@ -84,10 +88,27 @@ def find_streaming_link_in_text(bot, update):
 
         # We can't let the user save the same link at the same chat if he already save it within the last week
         if db.check_if_same_link_same_chat(link, update.message.chat_id, 7) is False:
-            user_chat_link = UserChatLink(chat_id=update.message.chat_id, chat_name=update.message.chat.title or update.message.chat.username or update.message.chat.first_name, created_at=datetime.datetime.now(
-            ), user_id=user_id, link_type=link_type.value, link=link)
-            db.save_object(user_chat_link)
-            logger.info('Saving new link')
+            # Get link info based on the link type before saving it
+            try:
+                link_info = None
+                if streaming_service_type == StreamingServiceType.SPOTIFY.value:
+                    link_info = spotify_parser.get_link_info(link, link_type)
+                elif streaming_service_type == StreamingServiceType.DEEZER.value:
+                    link_info = deezer_parser.get_link_info(link, link_type)
+
+                user_chat_link = UserChatLink(chat_id=update.message.chat_id,
+                                              chat_name=update.message.chat.title or update.message.chat.username or update.message.chat.first_name,
+                                              artist_name=link_info.artist,
+                                              album_name=link_info.album,
+                                              track_name=link_info.track,
+                                              created_at=datetime.datetime.now(),
+                                              user_id=user_id,
+                                              link_type=link_type.value,
+                                              link=link)
+                db.save_object(user_chat_link)
+                logger.info('Saving new link')
+            except:
+                logger.error('Error ocurred getting or saving the link')
         else:
             logger.warn(
                 'This user already sent this link in this chat the last week')
