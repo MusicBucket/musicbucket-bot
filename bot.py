@@ -1,7 +1,7 @@
 from app.music import spotify, deezer
 from app.music.music import LinkType, StreamingServiceType
 from app.db.db import DB, User, UserChatLink
-from app.responser import Responser
+from app.responser import Responser, ResponseType
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from telegram import ParseMode
 from dotenv import load_dotenv
@@ -49,7 +49,22 @@ def music(bot, update):
     responser = Responser()
 
     last_week_links = db.get_links(update.message.chat_id, 7)
-    response = responser.last_week_links_by_user(last_week_links)
+    response = responser.links_by_user(
+        last_week_links, ResponseType.LAST_WEEK)
+    update.message.reply_text(response, disable_web_page_preview=True,
+                              parse_mode=ParseMode.HTML)
+
+
+def music_from_beginning(bot, update):
+    """
+    Command /music_from_beginning
+    Gets the links sent by all the users of the chat from the beginning
+    """
+    responser = Responser()
+
+    all_time_links = db.get_links(update.message.chat_id)
+    response = responser.links_by_user(
+        all_time_links, ResponseType.FROM_THE_BEGINNING)
     update.message.reply_text(response, disable_web_page_preview=True,
                               parse_mode=ParseMode.HTML)
 
@@ -125,6 +140,7 @@ def main():
     dispatcher.add_handler(CommandHandler('start', start))
     dispatcher.add_handler(CommandHandler('help', help))
     dispatcher.add_handler(CommandHandler('music', music))
+    dispatcher.add_handler(CommandHandler('music_from_beginning', music_from_beginning))
 
     # Non command handlers
     dispatcher.add_handler(MessageHandler(

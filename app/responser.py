@@ -1,13 +1,23 @@
+from enum import Enum
+
 from .music import spotify, deezer, music
 from emoji import emojize
 
 
-class Responser():
-    def last_week_links_by_user(self, user_links):
-        # spotify_parser = spotify.SpotifyParser()
-        # deezer_parser = deezer.DeezerParser()
+class ResponseType(Enum):
+    """Response types based on the available commands"""
+    FROM_THE_BEGINNING = 0
+    LAST_WEEK = 1
 
-        msg = '<strong>Music from the last week:</strong> \n'
+
+class Responser():
+    def links_by_user(self, user_links, response_type):
+        msg = ''
+        if response_type == ResponseType.LAST_WEEK:
+            msg += '<strong>Music from the last week:</strong> \n'
+        elif response_type == ResponseType.FROM_THE_BEGINNING:
+            msg += '<strong>Music from the beginning of time:</strong> \n'
+
         for user, links in user_links.items():
             msg += '- {} <strong>{}:</strong>\n'.format(emojize(':baby:', use_aliases=True),
                                                         user.username or user.firstname)
@@ -15,16 +25,9 @@ class Responser():
             for link in links:
                 print('Link: {}'.format(link))
                 link_info = music.LinkInfo(link_type=link.link_type,
-                                     artist=link.artist_name,
-                                     album=link.album_name,
-                                     track=link.track_name)
-
-                # if spotify_parser.is_spotify_url(link.link):
-                #     link_info = spotify_parser.get_link_info(
-                #         link.link, link.link_type)
-                # elif deezer_parser.is_deezer_url(link.link):
-                #     link_info = deezer_parser.get_link_info(
-                #         link.link, link.link_type)
+                                           artist=link.artist_name,
+                                           album=link.album_name,
+                                           track=link.track_name)
 
                 if link_info is not None and link_info != '':
                     if link.link_type == spotify.LinkType.ARTIST.value:

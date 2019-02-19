@@ -28,15 +28,27 @@ class DB:
         session = self.sessionmaker()
         return session.query(User).all()
 
-    def get_links(self, chat_id, days):
-        """Returns a dictionary of the users and their links for a specific chat of the last week"""
-        logger.info('Getting last week links of chat: {}'.format(chat_id))
+    def get_links(self, chat_id, days=None):
+        """Returns a dictionary of the users and their links for a specific chat and the given days"""
+        qry = None
         session = self.sessionmaker()
-        qry = session.query(UserChatLink)\
-            .filter(UserChatLink.created_at >= datetime.datetime.now() - datetime.timedelta(days=days))\
-            .filter(UserChatLink.chat_id == chat_id)\
-            .order_by(UserChatLink.created_at)\
-            .all()
+
+        if days is not None:
+            logger.info(
+                'Getting links of chat: {} from the last {} days'.format(chat_id, days))
+            qry = session.query(UserChatLink)\
+                .filter(UserChatLink.created_at >= datetime.datetime.now() - datetime.timedelta(days=days))\
+                .filter(UserChatLink.chat_id == chat_id)\
+                .order_by(UserChatLink.created_at)\
+                .all()
+        else:
+            logger.info(
+                'Getting links of chat: {} from the beggining'.format(chat_id))
+            qry = session.query(UserChatLink)\
+                .filter(UserChatLink.chat_id == chat_id)\
+                .order_by(UserChatLink.created_at)\
+                .all()
+
         res = defaultdict(list)
         for link in qry:
             res[link.user].append(link)
@@ -48,18 +60,16 @@ class DB:
             'Checking if this user already saved this link in the same chat.')
         session = self.sessionmaker()
         return session.query(exists()
-                              .where(UserChatLink.chat_id == chat_id)
-                              .where(UserChatLink.link == link)
-                              .where(UserChatLink.created_at >= datetime.datetime.now() - datetime.timedelta(days=days))
-                              )\
+                             .where(UserChatLink.chat_id == chat_id)
+                             .where(UserChatLink.link == link)
+                             .where(UserChatLink.created_at >= datetime.datetime.now() - datetime.timedelta(days=days))
+                             )\
             .scalar()
 
     def check_if_user_exists(self, user_id):
         logger.info('Checking if exists. User: {}'.format(user_id))
         session = self.sessionmaker()
         return session.query(exists().where(User.id == user_id)).scalar()
-
-   
 
     def save_object(self, object):
         session = self.sessionmaker()
