@@ -4,6 +4,7 @@ A Telegram Bot that collects streaming services music links that users send in a
 - *Artist*
 - *Album*
 - *Track*
+- *Genre*
 
 ### Currently supported music streaming services:
 - [x] Spotify
