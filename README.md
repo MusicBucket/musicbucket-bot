@@ -1,6 +1,9 @@
 # music-bucket-bot
 
-A Telegram Bot that collects streaming services music links that users send in a chat and shows them by request ("/music").
+A Telegram Bot that collects streaming services music links that users send in a chat and shows them by request, with the related info:
+- *Artist*
+- *Album*
+- *Track*
 
 ### Currently supported music streaming services:
 - [x] Spotify
