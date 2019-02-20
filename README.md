@@ -2,10 +2,16 @@
 
 A Telegram Bot that collects streaming services music links that users send in a chat and shows them by request ("/music").
 
-Currently supported music streaming services:
+### Currently supported music streaming services:
 - [x] Spotify
 - [x] Deezer
 - [ ] Tidal
+
+### Commands
+- ```/music``` Retrevies the music shared in the chat from the last week. Grouped by user.
+- ```/music_from_beginning``` Retries the music shared in the chat from the beginning of time. Grouped by user.
+
+**Official bot** => ```@music_telegram_bot```
 
 ## Installation
 - Install dependencies from requirements.txt
