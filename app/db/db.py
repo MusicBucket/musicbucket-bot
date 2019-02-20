@@ -101,6 +101,7 @@ class UserChatLink(Base):
     artist_name = Column(String)
     album_name = Column(String)
     track_name = Column(String)
+    genre = Column(String)
     created_at = Column(DateTime)
     chat_id = Column(String)
     chat_name = Column(String)

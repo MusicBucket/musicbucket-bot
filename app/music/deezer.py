@@ -29,15 +29,35 @@ class DeezerParser():
         if link_type == LinkType.ARTIST:
             artist = deezer_client.get_artist(id)
             link_info.artist = artist.name
+            # An artist doesn't return genres, so we'll get his last album, get genre id
+            # and ask for genre data to API
+            artist_albums = [
+                album for album in artist.get_albums() if album.record_type == 'album']
+            artist_albums.sort(key=lambda x: x.release_date, reverse=True)
+            last_artist_album = artist_albums[0] if len(
+                artist_albums) > 0 else None
+            if last_artist_album is not None:
+                genre = deezer_client.get_genre(last_artist_album.genre_id)
+                link_info.genre = genre.name
+
         elif link_type == LinkType.ALBUM:
             album = deezer_client.get_album(id)
             link_info.album = album.title
-            link_info.artist = album.get_artist().name
+            link_info.artist = album.artist.name
+            if len(album.genres) > 0:
+                link_info.genre = album.genres[0].name
+
         elif link_type == LinkType.TRACK:
             track = deezer_client.get_track(id)
             link_info.track = track.title
-            # link_info.album = track.get_album().title
-            link_info.artist = track.get_artist().name
+            link_info.album = track.album.title
+            link_info.artist = track.artist.name
+            # A track doesn't return genres, so we'll get his album, get genre id
+            # and ask for genre data to API
+            album = deezer_client.get_album(track.album.id)
+            if album.error is None:
+                if len(album.genres) > 0:
+                    link_info.genre = album.genres[0].name
 
         return link_info
 

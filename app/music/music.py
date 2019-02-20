@@ -7,19 +7,20 @@ class LinkType(Enum):
     ALBUM = 1
     TRACK = 2
 
+
 class StreamingServiceType(Enum):
     """Available streaming services"""
     SPOTIFY = 0
     DEEZER = 1
 
 
-
 class LinkInfo():
     """Represents a link"""
     # whatever a music streaming service returns from a id request
 
-    def __init__(self, link_type, artist=None, album=None, track=None):
+    def __init__(self, link_type, artist=None, album=None, track=None, genre=None):
         self.link_type = link_type
         self.artist = artist
         self.album = album
         self.track = track
+        self.genre = genre

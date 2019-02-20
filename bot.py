@@ -116,6 +116,7 @@ def find_streaming_link_in_text(bot, update):
                                               artist_name=link_info.artist,
                                               album_name=link_info.album,
                                               track_name=link_info.track,
+                                              genre=link_info.genre,
                                               created_at=datetime.datetime.now(),
                                               user_id=user_id,
                                               link_type=link_type.value,
@@ -140,7 +141,8 @@ def main():
     dispatcher.add_handler(CommandHandler('start', start))
     dispatcher.add_handler(CommandHandler('help', help))
     dispatcher.add_handler(CommandHandler('music', music))
-    dispatcher.add_handler(CommandHandler('music_from_beginning', music_from_beginning))
+    dispatcher.add_handler(CommandHandler(
+        'music_from_beginning', music_from_beginning))
 
     # Non command handlers
     dispatcher.add_handler(MessageHandler(
