@@ -1,4 +1,4 @@
-# music-bucket-bot
+# Music Bucket Bot
 
 A Telegram Bot that collects streaming services music links that users send in a chat and shows them by request, with the related info:
 - *Artist*
