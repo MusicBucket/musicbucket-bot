@@ -2,7 +2,7 @@
 
 A Telegram Bot that collects streaming services music links that users send in a chat and shows them by request ("/music").
 
-Currently music streaming services supported:
+Currently supported music streaming services:
 - [x] Spotify
 - [x] Deezer
 - [ ] Tidal
