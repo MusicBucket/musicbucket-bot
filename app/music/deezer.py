@@ -55,7 +55,9 @@ class DeezerParser():
             # A track doesn't return genres, so we'll get his album, get genre id
             # and ask for genre data to API
             album = deezer_client.get_album(track.album.id)
-            if album.error is None:
+            try:
+                album.error
+            except AttributeError:
                 if len(album.genres) > 0:
                     link_info.genre = album.genres[0].name
 
