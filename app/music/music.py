@@ -15,8 +15,8 @@ class StreamingServiceType(Enum):
 
 
 class LinkInfo():
-    """Represents a link"""
-    # whatever a music streaming service returns from a id request
+    """Represents a link with the related music information from the
+    streaming service"""
 
     def __init__(self, link_type, artist=None, album=None, track=None, genre=None):
         self.link_type = link_type
