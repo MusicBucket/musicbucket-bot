@@ -26,13 +26,27 @@ class Responser():
                 print('Link: {}'.format(link))
 
                 if link.link_type == spotify.LinkType.ARTIST.value:
-                    msg += '    {} <a href="{}">{}</a> {}\n'.format(
-                        emojize(':busts_in_silhouette:', use_aliases=True), link.link, link.artist_name, '(' + link.genre + ')' if link.genre is not None else '')
+                    msg += '    {}  {} <a href="{}">{}</a> {}\n'.format(
+                        emojize(':busts_in_silhouette:', use_aliases=True),
+                        '[' + link.created_at.strftime("%Y/%m/%d") + ']' if response_type.FROM_THE_BEGINNING else '',
+                        link.link,
+                        link.artist_name,
+                        '(' + link.genre + ')' if link.genre is not None else '')
                 elif link.link_type == spotify.LinkType.ALBUM.value:
-                    msg += '    {} <a href="{}">{} - {}</a> {}\n'.format(
-                        emojize(':cd:', use_aliases=True), link.link, link.artist_name, link.album_name, '(' + link.genre + ')' if link.genre is not None else '')
+                    msg += '    {}  {} <a href="{}">{} - {}</a> {}\n'.format(
+                        emojize(':cd:', use_aliases=True),
+                        '[' + link.created_at.strftime("%Y/%m/%d") + ']' if response_type.FROM_THE_BEGINNING else '',
+                        link.link,
+                        link.artist_name,
+                        link.album_name,
+                        '(' + link.genre + ')' if link.genre is not None else '')
                 elif link.link_type == spotify.LinkType.TRACK.value:
-                    msg += '    {} <a href="{}">{} by {}</a> {}\n'.format(emojize(
-                        ':musical_note:', use_aliases=True), link.link, link.track_name, link.artist_name, '(' + link.genre + ')' if link.genre is not None else '')
+                    msg += '    {}  {} <a href="{}">{} by {}</a> {}\n'.format(
+                        emojize(':musical_note:', use_aliases=True),
+                        '[' + link.created_at.strftime("%Y/%m/%d") + ']' if response_type.FROM_THE_BEGINNING else '',
+                        link.link,
+                        link.track_name,
+                        link.artist_name,
+                        '(' + link.genre + ')' if link.genre is not None else '')
             msg += '\n'
         return msg
