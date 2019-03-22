@@ -36,17 +36,17 @@ class DB:
         if days is not None:
             logger.info(
                 'Getting links of chat: {} from the last {} days'.format(chat_id, days))
-            qry = session.query(UserChatLink)\
-                .filter(UserChatLink.created_at >= datetime.datetime.now() - datetime.timedelta(days=days))\
-                .filter(UserChatLink.chat_id == chat_id)\
-                .order_by(UserChatLink.created_at)\
+            qry = session.query(UserChatLink) \
+                .filter(UserChatLink.created_at >= datetime.datetime.now() - datetime.timedelta(days=days)) \
+                .filter(UserChatLink.chat_id == chat_id) \
+                .order_by(UserChatLink.created_at) \
                 .all()
         else:
             logger.info(
-                'Getting links of chat: {} from the beggining'.format(chat_id))
-            qry = session.query(UserChatLink)\
-                .filter(UserChatLink.chat_id == chat_id)\
-                .order_by(UserChatLink.created_at)\
+                'Getting links of chat: {} from the beginning'.format(chat_id))
+            qry = session.query(UserChatLink) \
+                .filter(UserChatLink.chat_id == chat_id) \
+                .order_by(UserChatLink.created_at) \
                 .all()
 
         res = defaultdict(list)
@@ -63,7 +63,7 @@ class DB:
                              .where(UserChatLink.chat_id == chat_id)
                              .where(UserChatLink.link == link)
                              .where(UserChatLink.created_at >= datetime.datetime.now() - datetime.timedelta(days=days))
-                             )\
+                             ) \
             .scalar()
 
     def check_if_user_exists(self, user_id):

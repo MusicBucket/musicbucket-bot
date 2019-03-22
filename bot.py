@@ -1,5 +1,5 @@
 from app.music import spotify, deezer
-from app.music.music import LinkType, StreamingServiceType
+from app.music.music import StreamingServiceType
 from app.db.db import DB, User, UserChatLink
 from app.responser import Responser, ResponseType
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
@@ -18,7 +18,6 @@ logging.basicConfig(
     level=logging.INFO)
 
 logger = logging.getLogger(__name__)
-
 
 # Setup Database
 db = DB()
@@ -70,7 +69,11 @@ def music_from_beginning(bot, update):
 
 
 def find_streaming_link_in_text(bot, update):
-    """Finds the streaming link, identifies the streaming service in the text and saves it to the database. It also saves the user if it doesn't exist @ database"""
+    """
+    Finds the streaming link, identifies the streaming service in the text and
+    saves it to the database. 
+    It also saves the user if it doesn't exist @ database
+    """
     spotify_parser = spotify.SpotifyParser()
     deezer_parser = deezer.DeezerParser()
 
@@ -112,7 +115,9 @@ def find_streaming_link_in_text(bot, update):
                     link_info = deezer_parser.get_link_info(link, link_type)
 
                 user_chat_link = UserChatLink(chat_id=update.message.chat_id,
-                                              chat_name=update.message.chat.title or update.message.chat.username or update.message.chat.first_name,
+                                              chat_name=update.message.chat.title
+                                                        or update.message.chat.username
+                                                        or update.message.chat.first_name,
                                               artist_name=link_info.artist,
                                               album_name=link_info.album,
                                               track_name=link_info.track,
@@ -124,7 +129,7 @@ def find_streaming_link_in_text(bot, update):
                 db.save_object(user_chat_link)
                 logger.info('Saving new link')
             except:
-                logger.error('Error ocurred getting or saving the link')
+                logger.error('Error occurred getting or saving the link')
         else:
             logger.warn(
                 'This user already sent this link in this chat the last week')

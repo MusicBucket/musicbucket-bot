@@ -7,6 +7,7 @@ deezer_client = deezer.Client()
 class DeezerParser():
     """Parser class tat helps to identify withc type of Deezer link is"""
 
+    @classmethod
     def get_link_type(self, url):
         """Resolves the Deezer link type"""
         if 'artist' in url:
@@ -17,14 +18,16 @@ class DeezerParser():
             return LinkType.TRACK
         return None
 
+    @classmethod
     def get_link_info(self, url, link_type):
-        """Resolves the name of the artist/album/track from a link
+        """
+        Resolves the name of the artist/album/track from a link
         Artist: 'https://www.deezer.com/artist/10443'
         Album: 'https://www.deezer.com/album/74271122'
         Track: 'http://www.deezer.com/track/71999722'
         """
         # Gets the entity id from the Deezer link:
-        id = url[url.rfind('/')+1:]
+        id = url[url.rfind('/') + 1:]
         link_info = LinkInfo(link_type=link_type)
         if link_type == LinkType.ARTIST:
             artist = deezer_client.get_artist(id)
@@ -63,12 +66,14 @@ class DeezerParser():
 
         return link_info
 
+    @classmethod
     def clean_url(self, url):
         """Receives a Deezer url and returns it cleaned"""
         if url.rfind('?') > -1:
             return url[:url.rfind('?')]
         return url
 
+    @classmethod
     def is_deezer_url(self, url):
         """Check if a message contains a Deezer link"""
         return 'www.deezer.com' in url

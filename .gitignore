@@ -1,9 +1,12 @@
 __pycache__/
 .vscode/
+.idea/
 env/
 .env
 
 db.sqlite
+Pipfile.lock
+
 
 app/__pycache__
 db/__pycache__
