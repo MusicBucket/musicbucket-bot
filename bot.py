@@ -1,6 +1,8 @@
+from collections import defaultdict
+
 from app.music import spotify, deezer
-from app.music.music import StreamingServiceType
-from app.db.db import DB, User, UserChatLink
+from app.music.music import StreamingServiceType, LinkType
+from app.db.db import db, User, Chat, Link
 from app.responser import Responser, ResponseType
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from telegram import ParseMode
@@ -20,19 +22,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Setup Database
-db = DB()
-
-
-def start(bot, update):
-    """Command /start"""
-    msg = ''
-    update.message.reply_text(msg)
-
-
-def help(bot, update):
-    """Command /help"""
-    msg = ''
-    update.message.reply_text(msg)
+db.connect()
+db.create_tables([User, Chat, Link])
 
 
 def error(bot, update, error):
@@ -44,14 +35,33 @@ def music(bot, update):
     """
     Command /music
     Gets the links sent by all the users of the chat in the last week
+    and group them by user>links
     """
     responser = Responser()
+    days = 7
+    now = datetime.datetime.now()
+    last_week_timedelta = datetime.timedelta(days=days)
 
-    last_week_links = db.get_links(update.message.chat_id, 7)
+    last_week_links = defaultdict(list)
+
+    qry_result = Link.select() \
+        .join(Chat) \
+        .where(Chat.id == update.message.chat_id) \
+        .where(
+        (Link.created_at >= now - last_week_timedelta) | (Link.updated_at >= now - last_week_timedelta)) \
+        .order_by(Link.updated_at.asc(), Link.created_at.asc())
+
+    for link in qry_result:
+        last_week_links[link.user].append(link)
+    last_week_links = dict(last_week_links)
+
     response = responser.links_by_user(
         last_week_links, ResponseType.LAST_WEEK)
+
     update.message.reply_text(response, disable_web_page_preview=True,
                               parse_mode=ParseMode.HTML)
+    logger.info("'/music' command was called by user {} in chat {}".format(
+        update.message.from_user.id, update.message.chat_id))
 
 
 def music_from_beginning(bot, update):
@@ -61,78 +71,119 @@ def music_from_beginning(bot, update):
     """
     responser = Responser()
 
-    all_time_links = db.get_links(update.message.chat_id)
+    all_time_links = defaultdict(list)
+
+    qry_result = Link.select() \
+        .join(Chat) \
+        .where(Chat.id == update.message.chat_id) \
+        .order_by(Link.updated_at.asc(), Link.created_at.asc())
+
+    for link in qry_result:
+        all_time_links[link.user].append(link)
+    all_time_links = dict(all_time_links)
+
     response = responser.links_by_user(
         all_time_links, ResponseType.FROM_THE_BEGINNING)
     update.message.reply_text(response, disable_web_page_preview=True,
                               parse_mode=ParseMode.HTML)
+    logger.info("'/music_from_beginning' command was called by user {} in chat {}".format(
+        update.message.from_user.id, update.message.chat_id))
 
 
 def find_streaming_link_in_text(bot, update):
     """
-    Finds the streaming link, identifies the streaming service in the text and
+    Finds the streaming url, identifies the streaming service in the text and
     saves it to the database. 
-    It also saves the user if it doesn't exist @ database
+    It also saves the user and the chat if they don't exist @ database
     """
     spotify_parser = spotify.SpotifyParser()
     deezer_parser = deezer.DeezerParser()
 
-    link = ''
     link_type = None
     streaming_service_type = None
     url = utils.extract_url_from_message(update.message.text)
+    cleaned_url = ''
 
-    # Check if is a Spotify/Deezer link
+    # Check if is a Spotify/Deezer url
     if spotify_parser.is_spotify_url(url):
-        streaming_service_type = StreamingServiceType.SPOTIFY.value
+        streaming_service_type = StreamingServiceType.SPOTIFY
         link_type = spotify_parser.get_link_type(url)
-        link = spotify_parser.clean_url(url)
+        cleaned_url = spotify_parser.clean_url(url)
     elif deezer_parser.is_deezer_url(url):
-        streaming_service_type = StreamingServiceType.DEEZER.value
+        streaming_service_type = StreamingServiceType.DEEZER
         link_type = deezer_parser.get_link_type(url)
-        link = deezer_parser.clean_url(url)
+        cleaned_url = deezer_parser.clean_url(url)
 
-    # If link was resolved correctly
+    # If link was resolved correctly, save or update it
     if link_type is not None and link_type != 0:
-        user_id = update.message.from_user.id
+        _save_or_update_user_chat_link(update, cleaned_url, link_type, streaming_service_type, spotify_parser,
+                                       deezer_parser)
 
-        # If we didn't store the user yet, we do it now
-        if db.check_if_user_exists(user_id) is False:
-            user = User(id=user_id, username=update.message.from_user.username,
-                        firstname=update.message.from_user.first_name)
-            db.save_object(user)
-        else:
-            logger.info('User already exists')
 
-        # We can't let the user save the same link at the same chat if he already save it within the last week
-        if db.check_if_same_link_same_chat(link, update.message.chat_id, 7) is False:
-            # Get link info based on the link type before saving it
-            try:
-                link_info = None
-                if streaming_service_type == StreamingServiceType.SPOTIFY.value:
-                    link_info = spotify_parser.get_link_info(link, link_type)
-                elif streaming_service_type == StreamingServiceType.DEEZER.value:
-                    link_info = deezer_parser.get_link_info(link, link_type)
+def _save_or_update_user_chat_link(update, cleaned_url, link_type, streaming_service_type, spotify_parser,
+                                   deezer_parser):
+    link_updated = False
 
-                user_chat_link = UserChatLink(chat_id=update.message.chat_id,
-                                              chat_name=update.message.chat.title
-                                                        or update.message.chat.username
-                                                        or update.message.chat.first_name,
-                                              artist_name=link_info.artist,
-                                              album_name=link_info.album,
-                                              track_name=link_info.track,
-                                              genre=link_info.genre,
-                                              created_at=datetime.datetime.now(),
-                                              user_id=user_id,
-                                              link_type=link_type.value,
-                                              link=link)
-                db.save_object(user_chat_link)
-                logger.info('Saving new link')
-            except:
-                logger.error('Error occurred getting or saving the link')
-        else:
-            logger.warn(
-                'This user already sent this link in this chat the last week')
+    # Create or get the user that sent the link
+    user, user_created = User.get_or_create(
+        id=update.message.from_user.id,
+        username=update.message.from_user.username,
+        first_name=update.message.from_user.first_name)
+    if user_created:
+        logger.info("User '{}' with id '{}' was created".format(
+            user.username if user.username else user.first_name,
+            user.id))
+
+    # Create or get the chat where the link was sent
+    chat, chat_created = Chat.get_or_create(
+        id=update.message.chat_id,
+        name=update.message.chat.title or update.message.chat.username or update.message.chat.first_name)
+    if chat_created:
+        logger.info("Chat '{}' with id '{}' was created".format(chat.name, chat.id))
+
+    # Update the link if it exists for a chat, create if it doesn't exist
+
+    link = Link.get_or_none((Link.url == cleaned_url) & (Link.chat == chat))
+    if link is not None:
+        # If link already exists, set updated_at and last_update_user to current
+        link.updated_at = datetime.datetime.now()
+        link.last_update_user = user
+        link.save()
+        link_updated = True
+    else:
+        # If the link doesn't exists, get link info based on the link type and save it
+        link_info = None
+        if streaming_service_type == StreamingServiceType.SPOTIFY:
+            link_info = spotify_parser.get_link_info(cleaned_url, link_type)
+        elif streaming_service_type == StreamingServiceType.DEEZER:
+            link_info = deezer_parser.get_link_info(cleaned_url, link_type)
+        if link_info is None:
+            logger.error("Error ocurred getting link info")
+
+        link = Link.create(
+            url=cleaned_url,
+            link_type=link_type.value,
+            streaming_service_type=streaming_service_type.value,
+            created_at=datetime.datetime.now(),
+            artist_name=link_info.artist,
+            album_name=link_info.album,
+            track_name=link_info.track,
+            genre=link_info.genre,
+            user=user,
+            chat=chat)
+
+    # Log link operation
+    link_operation = 'Saved' if not link_updated else 'Updated'
+
+    if link_type == LinkType.ARTIST:
+        logger.info("'{}' link '{}' of type '{}' in chat '{}'".format(
+            link_operation, link.artist_name, link.link_type, link.chat.name))
+    elif link_type == LinkType.ALBUM:
+        logger.info("'{}' link '{}' of type '{}' in chat '{}'".format(
+            link_operation, link.album_name, link.link_type, link.chat.name))
+    elif link_type == LinkType.TRACK:
+        logger.info("'{}' link '{}' of type '{}' in chat '{}'".format(
+            link_operation, link.track_name, link.link_type, link.chat.name))
 
 
 def main():
@@ -143,8 +194,7 @@ def main():
     dispatcher = updater.dispatcher
 
     # Register commands
-    dispatcher.add_handler(CommandHandler('start', start))
-    dispatcher.add_handler(CommandHandler('help', help))
+    # dispatcher.add_handler(CommandHandler('help', help))
     dispatcher.add_handler(CommandHandler('music', music))
     dispatcher.add_handler(CommandHandler(
         'music_from_beginning', music_from_beginning))

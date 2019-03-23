@@ -13,6 +13,8 @@ requests = "*"
 sqlalchemy = "*"
 emoji = "*"
 spotipy = "*"
+peewee = "*"
+ipdb = "*"
 
 [requires]
 python_version = "3.7"

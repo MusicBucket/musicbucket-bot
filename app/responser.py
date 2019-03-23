@@ -1,8 +1,10 @@
+import logging
 from enum import Enum
 
 from .music import spotify, deezer, music
 from emoji import emojize
 
+logger = logging.getLogger(__name__)
 
 class ResponseType(Enum):
     """Response types based on the available commands"""
@@ -21,22 +23,22 @@ class Responser():
         for user, links in user_links.items():
             msg += '- {} <strong>{}:</strong>\n'.format(emojize(':baby:', use_aliases=True),
                                                         user.username or user.firstname)
-            print('User links: {}'.format(user.links))
+            logger.info('User: {}, Links: {}'.format(user.id, links))
             for link in links:
-                print('Link: {}'.format(link))
+                logger.info('Link: {}'.format(link.url))
 
                 if link.link_type == spotify.LinkType.ARTIST.value:
                     msg += '    {}  {} <a href="{}">{}</a> {}\n'.format(
                         emojize(':busts_in_silhouette:', use_aliases=True),
                         '[' + link.created_at.strftime("%Y/%m/%d") + ']' if response_type.FROM_THE_BEGINNING else '',
-                        link.link,
+                        link.url,
                         link.artist_name,
                         '(' + link.genre + ')' if link.genre is not None else '')
                 elif link.link_type == spotify.LinkType.ALBUM.value:
                     msg += '    {}  {} <a href="{}">{} - {}</a> {}\n'.format(
                         emojize(':cd:', use_aliases=True),
                         '[' + link.created_at.strftime("%Y/%m/%d") + ']' if response_type.FROM_THE_BEGINNING else '',
-                        link.link,
+                        link.url,
                         link.artist_name,
                         link.album_name,
                         '(' + link.genre + ')' if link.genre is not None else '')
@@ -44,7 +46,7 @@ class Responser():
                     msg += '    {}  {} <a href="{}">{} by {}</a> {}\n'.format(
                         emojize(':musical_note:', use_aliases=True),
                         '[' + link.created_at.strftime("%Y/%m/%d") + ']' if response_type.FROM_THE_BEGINNING else '',
-                        link.link,
+                        link.url,
                         link.track_name,
                         link.artist_name,
                         '(' + link.genre + ')' if link.genre is not None else '')
