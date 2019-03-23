@@ -12,6 +12,7 @@ import app.util.utils as utils
 import logging
 import datetime
 
+# Load environment variables from .env file
 load_dotenv()
 
 # Enable logging

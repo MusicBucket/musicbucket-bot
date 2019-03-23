@@ -6,6 +6,7 @@ from emoji import emojize
 
 logger = logging.getLogger(__name__)
 
+
 class ResponseType(Enum):
     """Response types based on the available commands"""
     FROM_THE_BEGINNING = 0
@@ -13,6 +14,10 @@ class ResponseType(Enum):
 
 
 class Responser():
+
+    def __init__(self):
+        pass
+
     def links_by_user(self, user_links, response_type):
         msg = ''
         if response_type == ResponseType.LAST_WEEK:
@@ -30,25 +35,37 @@ class Responser():
                 if link.link_type == spotify.LinkType.ARTIST.value:
                     msg += '    {}  {} <a href="{}">{}</a> {}\n'.format(
                         emojize(':busts_in_silhouette:', use_aliases=True),
-                        '[' + link.created_at.strftime("%Y/%m/%d") + ']' if response_type.FROM_THE_BEGINNING else '',
+                        '[{}{}]'.format(link.created_at.strftime(
+                            "%Y/%m/%d"),
+                            ' | Updated @ {} by {}'.format(link.updated_at.strftime(
+                                "%Y/%m/%d"),
+                                link.last_update_user.username or link.last_update_user.first_name or '') if link.last_update_user else '') if response_type == ResponseType.FROM_THE_BEGINNING else '',
                         link.url,
                         link.artist_name,
-                        '(' + link.genre + ')' if link.genre is not None else '')
+                        '({})'.format(link.genre) if link.genre is not None else '')
                 elif link.link_type == spotify.LinkType.ALBUM.value:
                     msg += '    {}  {} <a href="{}">{} - {}</a> {}\n'.format(
                         emojize(':cd:', use_aliases=True),
-                        '[' + link.created_at.strftime("%Y/%m/%d") + ']' if response_type.FROM_THE_BEGINNING else '',
+                        '[{}{}]'.format(link.created_at.strftime(
+                            "%Y/%m/%d"),
+                            ' | Updated @ {} by {}'.format(link.updated_at.strftime(
+                                "%Y/%m/%d"),
+                                link.last_update_user.username or link.last_update_user.first_name or '') if link.last_update_user else '') if response_type == ResponseType.FROM_THE_BEGINNING else '',
                         link.url,
                         link.artist_name,
                         link.album_name,
-                        '(' + link.genre + ')' if link.genre is not None else '')
+                        '({})'.format(link.genre) if link.genre is not None else '')
                 elif link.link_type == spotify.LinkType.TRACK.value:
                     msg += '    {}  {} <a href="{}">{} by {}</a> {}\n'.format(
                         emojize(':musical_note:', use_aliases=True),
-                        '[' + link.created_at.strftime("%Y/%m/%d") + ']' if response_type.FROM_THE_BEGINNING else '',
+                        '[{}{}]'.format(link.created_at.strftime(
+                            "%Y/%m/%d"),
+                            ' | Updated @ {} by {}'.format(link.updated_at.strftime(
+                                "%Y/%m/%d"),
+                                link.last_update_user.username or link.last_update_user.first_name or '') if link.last_update_user else '') if response_type == ResponseType.FROM_THE_BEGINNING else '',
                         link.url,
                         link.track_name,
                         link.artist_name,
-                        '(' + link.genre + ')' if link.genre is not None else '')
+                        '({})'.format(link.genre) if link.genre is not None else '')
             msg += '\n'
         return msg
