@@ -1,6 +1,7 @@
+import datetime
 import logging
 
-from peewee import SqliteDatabase, Model, CharField, DateTimeField, ForeignKeyField, CompositeKey
+from peewee import SqliteDatabase, Model, CharField, IntegerField, DateTimeField, ForeignKeyField, CompositeKey
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +37,7 @@ class Link(Model):
     streaming_service_type = CharField()
     created_at = DateTimeField()
     updated_at = DateTimeField(null=True)
+    times_sent = IntegerField(default=1)
     artist_name = CharField(null=True)
     album_name = CharField(null=True)
     track_name = CharField(null=True)
@@ -47,6 +49,14 @@ class Link(Model):
     class Meta:
         database = db
         primary_key = CompositeKey('url', 'chat')
+
+    def apply_update(self, user):
+        """
+        Set the update fields to the current values
+        """
+        self.updated_at = datetime.datetime.now()
+        self.last_update_user = user
+        self.times_sent += 1
 
     def __str__(self):
         return 'Link: {}'.format(self.url)

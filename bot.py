@@ -160,12 +160,10 @@ def _save_or_update_user_chat_link(update, cleaned_url, link_type, streaming_ser
         logger.info("Chat '{}' with id '{}' was created".format(chat.name, chat.id))
 
     # Update the link if it exists for a chat, create if it doesn't exist
-
     link = Link.get_or_none((Link.url == cleaned_url) & (Link.chat == chat))
     if link is not None:
         # If link already exists, set updated_at and last_update_user to current
-        link.updated_at = datetime.datetime.now()
-        link.last_update_user = user
+        link.apply_update(user)
         link.save()
         link_updated = True
     else:
