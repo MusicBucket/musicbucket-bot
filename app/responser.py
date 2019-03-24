@@ -13,12 +13,10 @@ class ResponseType(Enum):
     LAST_WEEK = 1
 
 
-class Responser():
+class Responser:
 
-    def __init__(self):
-        pass
-
-    def links_by_user(self, user_links, response_type):
+    @staticmethod
+    def links_by_user(user_links, response_type):
         msg = ''
         if response_type == ResponseType.LAST_WEEK:
             msg += '<strong>Music from the last week:</strong> \n'
@@ -68,4 +66,14 @@ class Responser():
                         link.artist_name,
                         '({})'.format(link.genre) if link.genre is not None else '')
             msg += '\n'
+        return msg
+
+    @staticmethod
+    def stats_by_user(users):
+        msg = '<strong>Links sent by the users from the beginning in this chat:</strong> \n'
+
+        for user in users:
+            msg += '- {} <strong>{}:</strong> {}\n'.format(emojize(':baby:', use_aliases=True),
+                                                           user.username or user.firstname,
+                                                           user.links)
         return msg

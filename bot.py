@@ -1,5 +1,5 @@
 from collections import defaultdict
-
+from peewee import fn, SQL
 from app.music import spotify, deezer
 from app.music.music import StreamingServiceType, LinkType
 from app.db.db import db, User, Chat, Link
@@ -38,25 +38,24 @@ def music(bot, update):
     Gets the links sent by all the users of the chat in the last week
     and group them by user>links
     """
-    responser = Responser()
     days = 7
     now = datetime.datetime.now()
     last_week_timedelta = datetime.timedelta(days=days)
 
     last_week_links = defaultdict(list)
 
-    qry_result = Link.select() \
+    links = Link.select() \
         .join(Chat) \
         .where(Chat.id == update.message.chat_id) \
         .where(
         (Link.created_at >= now - last_week_timedelta) | (Link.updated_at >= now - last_week_timedelta)) \
         .order_by(Link.updated_at.asc(), Link.created_at.asc())
 
-    for link in qry_result:
+    for link in links:
         last_week_links[link.user].append(link)
     last_week_links = dict(last_week_links)
 
-    response = responser.links_by_user(
+    response = Responser.links_by_user(
         last_week_links, ResponseType.LAST_WEEK)
 
     update.message.reply_text(response, disable_web_page_preview=True,
@@ -70,24 +69,42 @@ def music_from_beginning(bot, update):
     Command /music_from_beginning
     Gets the links sent by all the users of the chat from the beginning
     """
-    responser = Responser()
-
     all_time_links = defaultdict(list)
 
-    qry_result = Link.select() \
+    links = Link.select() \
         .join(Chat) \
         .where(Chat.id == update.message.chat_id) \
         .order_by(Link.updated_at.asc(), Link.created_at.asc())
 
-    for link in qry_result:
+    for link in links:
         all_time_links[link.user].append(link)
     all_time_links = dict(all_time_links)
 
-    response = responser.links_by_user(
+    response = Responser.links_by_user(
         all_time_links, ResponseType.FROM_THE_BEGINNING)
     update.message.reply_text(response, disable_web_page_preview=True,
                               parse_mode=ParseMode.HTML)
     logger.info("'/music_from_beginning' command was called by user {} in chat {}".format(
+        update.message.from_user.id, update.message.chat_id))
+
+
+def stats(bot, update):
+    """
+    Command /stats
+    Returns the number of links sent in a chat by every user
+    """
+    users = User.select(User, fn.Count(Link.url).alias('links')) \
+        .join(Link, on=Link.user) \
+        .join(Chat, on=Link.chat) \
+        .where(Link.chat.id == update.message.chat_id) \
+        .group_by(User) \
+        .order_by(SQL('links').desc())
+
+    response = Responser.stats_by_user(users)
+    update.message.reply_text(response, disable_web_page_preview=True,
+                              parse_mode=ParseMode.HTML)
+
+    logger.info("'/stats' command was called by user {} in the chat {}".format(
         update.message.from_user.id, update.message.chat_id))
 
 
@@ -199,6 +216,7 @@ def main():
     dispatcher.add_handler(CommandHandler('music', music))
     dispatcher.add_handler(CommandHandler(
         'music_from_beginning', music_from_beginning))
+    dispatcher.add_handler(CommandHandler('stats', stats))
 
     # Non command handlers
     dispatcher.add_handler(MessageHandler(

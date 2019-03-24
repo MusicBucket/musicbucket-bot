@@ -49,4 +49,4 @@ class Link(Model):
         primary_key = CompositeKey('url', 'chat')
 
     def __str__(self):
-        return 'Link. user: {}, chat: {}, url: {}'.format(self.user.id, self.chat.id, self.url)
+        return 'Link: {}'.format(self.url)
