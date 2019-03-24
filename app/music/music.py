@@ -14,7 +14,7 @@ class StreamingServiceType(Enum):
     DEEZER = 'DEEZER'
 
 
-class LinkInfo():
+class LinkInfo:
     """Represents a link with the related music information from the
     streaming service"""
 

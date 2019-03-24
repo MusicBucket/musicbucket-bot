@@ -1,7 +1,7 @@
 import logging
 from enum import Enum
 
-from .music import spotify, deezer, music
+from app.music.music import LinkType
 from emoji import emojize
 
 logger = logging.getLogger(__name__)
@@ -30,7 +30,7 @@ class Responser:
             for link in links:
                 logger.info('Link: {}'.format(link.url))
 
-                if link.link_type == spotify.LinkType.ARTIST.value:
+                if link.link_type == LinkType.ARTIST.value:
                     msg += '    {}  {} <a href="{}">{}</a> {}\n'.format(
                         emojize(':busts_in_silhouette:', use_aliases=True),
                         '[{}{}]'.format(link.created_at.strftime(
@@ -41,7 +41,7 @@ class Responser:
                         link.url,
                         link.artist_name,
                         '({})'.format(link.genre) if link.genre is not None else '')
-                elif link.link_type == spotify.LinkType.ALBUM.value:
+                elif link.link_type == LinkType.ALBUM.value:
                     msg += '    {}  {} <a href="{}">{} - {}</a> {}\n'.format(
                         emojize(':cd:', use_aliases=True),
                         '[{}{}]'.format(link.created_at.strftime(
@@ -53,7 +53,7 @@ class Responser:
                         link.artist_name,
                         link.album_name,
                         '({})'.format(link.genre) if link.genre is not None else '')
-                elif link.link_type == spotify.LinkType.TRACK.value:
+                elif link.link_type == LinkType.TRACK.value:
                     msg += '    {}  {} <a href="{}">{} by {}</a> {}\n'.format(
                         emojize(':musical_note:', use_aliases=True),
                         '[{}{}]'.format(link.created_at.strftime(

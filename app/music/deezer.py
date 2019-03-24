@@ -1,13 +1,15 @@
 import deezer
-from .music import LinkType, LinkInfo
 
+from app.music.music import LinkType, LinkInfo
+from app.music.streaming_service import StreamingServiceParser
+
+# Deezer client init
 deezer_client = deezer.Client()
 
 
-class DeezerParser():
+class DeezerParser(StreamingServiceParser):
     """Parser class tat helps to identify withc type of Deezer link is"""
 
-    @classmethod
     def get_link_type(self, url):
         """Resolves the Deezer link type"""
         if 'artist' in url:
@@ -18,7 +20,6 @@ class DeezerParser():
             return LinkType.TRACK
         return None
 
-    @classmethod
     def get_link_info(self, url, link_type):
         """
         Resolves the name of the artist/album/track from a link
@@ -27,10 +28,10 @@ class DeezerParser():
         Track: 'http://www.deezer.com/track/71999722'
         """
         # Gets the entity id from the Deezer link:
-        id = url[url.rfind('/') + 1:]
+        entity_id = url[url.rfind('/') + 1:]
         link_info = LinkInfo(link_type=link_type)
         if link_type == LinkType.ARTIST:
-            artist = deezer_client.get_artist(id)
+            artist = deezer_client.get_artist(entity_id)
             link_info.artist = artist.name
             # An artist doesn't return genres, so we'll get his last album, get genre id
             # and ask for genre data to API
@@ -44,14 +45,14 @@ class DeezerParser():
                 link_info.genre = genre.name
 
         elif link_type == LinkType.ALBUM:
-            album = deezer_client.get_album(id)
+            album = deezer_client.get_album(entity_id)
             link_info.album = album.title
             link_info.artist = album.artist.name
             if len(album.genres) > 0:
                 link_info.genre = album.genres[0].name
 
         elif link_type == LinkType.TRACK:
-            track = deezer_client.get_track(id)
+            track = deezer_client.get_track(entity_id)
             link_info.track = track.title
             link_info.album = track.album.title
             link_info.artist = track.artist.name
@@ -66,14 +67,12 @@ class DeezerParser():
 
         return link_info
 
-    @classmethod
     def clean_url(self, url):
         """Receives a Deezer url and returns it cleaned"""
         if url.rfind('?') > -1:
             return url[:url.rfind('?')]
         return url
 
-    @classmethod
-    def is_deezer_url(self, url):
+    def is_valid_url(self, url):
         """Check if a message contains a Deezer link"""
         return 'www.deezer.com' in url

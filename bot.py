@@ -1,6 +1,7 @@
 from collections import defaultdict
 from peewee import fn, SQL
-from app.music import spotify, deezer
+from app.music.deezer import DeezerParser
+from app.music.spotify import SpotifyParser
 from app.music.music import StreamingServiceType, LinkType
 from app.db.db import db, User, Chat, Link
 from app.responser import Responser, ResponseType
@@ -114,8 +115,8 @@ def find_streaming_link_in_text(bot, update):
     saves it to the database. 
     It also saves the user and the chat if they don't exist @ database
     """
-    spotify_parser = spotify.SpotifyParser()
-    deezer_parser = deezer.DeezerParser()
+    spotify_parser = SpotifyParser()
+    deezer_parser = DeezerParser()
 
     link_type = None
     streaming_service_type = None
@@ -123,11 +124,11 @@ def find_streaming_link_in_text(bot, update):
     cleaned_url = ''
 
     # Check if is a Spotify/Deezer url
-    if spotify_parser.is_spotify_url(url):
+    if spotify_parser.is_valid_url(url):
         streaming_service_type = StreamingServiceType.SPOTIFY
         link_type = spotify_parser.get_link_type(url)
         cleaned_url = spotify_parser.clean_url(url)
-    elif deezer_parser.is_deezer_url(url):
+    elif deezer_parser.is_valid_url(url):
         streaming_service_type = StreamingServiceType.DEEZER
         link_type = deezer_parser.get_link_type(url)
         cleaned_url = deezer_parser.clean_url(url)
