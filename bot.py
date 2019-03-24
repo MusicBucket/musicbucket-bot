@@ -210,7 +210,6 @@ def main():
     dispatcher = updater.dispatcher
 
     # Register commands
-    # dispatcher.add_handler(CommandHandler('help', help))
     dispatcher.add_handler(CommandHandler('music', music))
     dispatcher.add_handler(CommandHandler(
         'music_from_beginning', music_from_beginning))
@@ -225,7 +224,6 @@ def main():
 
     # Start the bot
     updater.start_polling()
-
     updater.idle()
 
 

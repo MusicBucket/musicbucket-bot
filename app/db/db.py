@@ -28,7 +28,7 @@ class Chat(Model):
         database = db
 
     def __str__(self):
-        return 'Chat {}'.format(self.id)
+        return 'Chat {}-{}'.format(self.id, self.name)
 
 
 class Link(Model):
