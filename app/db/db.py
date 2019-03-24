@@ -7,34 +7,6 @@ logger = logging.getLogger(__name__)
 db = SqliteDatabase('db.sqlite', pragmas={'foreign_keys': 1})
 
 
-#     def get_links(self, chat_id, days=None):
-#         """Returns a dictionary of the users and their links for a specific chat and the given days"""
-#         qry = None
-#         session = self.sessionmaker()
-#
-#         if days is not None:
-#             logger.info(
-#                 'Getting links of chat: {} from the last {} days'.format(chat_id, days))
-#             qry = session.query(UserChatLink) \
-#                 .filter(UserChatLink.created_at >= datetime.datetime.now() - datetime.timedelta(days=days)) \
-#                 .filter(UserChatLink.chat_id == chat_id) \
-#                 .order_by(UserChatLink.created_at) \
-#                 .all()
-#         else:
-#             logger.info(
-#                 'Getting links of chat: {} from the beginning'.format(chat_id))
-#             qry = session.query(UserChatLink) \
-#                 .filter(UserChatLink.chat_id == chat_id) \
-#                 .order_by(UserChatLink.created_at) \
-#                 .all()
-#
-#         res = defaultdict(list)
-#         for link in qry:
-#             res[link.user].append(link)
-#         res = dict(res)
-#         return res
-#
-
 class User(Model):
     id = CharField(primary_key=True)
     username = CharField(null=True)
