@@ -15,6 +15,7 @@ A Telegram Bot that collects streaming services music links that users send in a
 - ```/music``` Retrieves the music shared in the chat from the last week. Grouped by user.
 - ```/music_from_beginning``` Retrieves the music shared in the chat from the beginning of time. Grouped by user.
 - ```/stats``` Retrieves an user list with a links counter for the current chat.
+- ```@music_bucket_bot [artist/album/track] [name]``` Search for an artist, an album or a track and add it to the list.
 
 
 **Official bot** => ```@music_bucket_bot```
