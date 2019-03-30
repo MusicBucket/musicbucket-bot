@@ -88,6 +88,9 @@ class SpotifyParser(StreamingServiceParser):
 
         return link_info
 
+    def get_entity_id_from_url(self, url):
+        return url[url.rfind('/') + 1:]
+
     def clean_url(self, url):
         """Receives a Spotify url and returns it cleaned"""
         if url.rfind('?') > -1:
