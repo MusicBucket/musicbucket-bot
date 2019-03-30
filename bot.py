@@ -1,7 +1,7 @@
 from collections import defaultdict
 from uuid import uuid4
 
-from peewee import fn, SQL
+from peewee import fn, SQL, Entity
 from app.music.deezer import DeezerParser
 from app.music.spotify import SpotifyParser
 from app.music.music import StreamingServiceType, LinkType, EntityType
@@ -55,11 +55,29 @@ def search(bot, update):
     if valid_entity_type and len(query) >= 3:
         search_result = spotify_parser.search_link(query, entity_type)
         for result in search_result:
+            thumb_url = ''
+            description = ''
+
+            # If the result are tracks, look for the album cover
+            if entity_type == EntityType.TRACK.value:
+                album = result['album']
+                artists = result['artists']
+                thumb_url = album['images'][0]['url']
+                # [o.my_attr for o in my_list]
+                description = '{} - {}'.format(', '.join(artist['name'] for artist in artists), album['name'])
+            elif entity_type == EntityType.ALBUM.value:
+                thumb_url = result['images'][0]['url'] if len(result['images']) > 0 else ''
+                artists = result['artists']
+                description = ', '.join(artist['name'] for artist in artists)
+            elif entity_type == EntityType.ARTIST.value:
+                thumb_url = result['images'][0]['url'] if len(result['images']) > 0 else ''
+                description = ', '.join(result['genres'])
+
             results.append(InlineQueryResultArticle(
                 id=result['id'],
-                thumb_url=result['album']['images'][0]['url'] if entity_type == EntityType.TRACK.value else
-                result['images'][0]['url'],
+                thumb_url=thumb_url,
                 title=result['name'],
+                description=description,
                 input_message_content=InputTextMessageContent(result['external_urls']['spotify'])))
 
     update.inline_query.answer(results)
@@ -159,11 +177,11 @@ def find_streaming_link_in_text(bot, update):
     if spotify_parser.is_valid_url(url):
         streaming_service_type = StreamingServiceType.SPOTIFY
         link_type = spotify_parser.get_link_type(url)
-        cleaned_url = spotify_parser.clean_url(url, link_type)
+        cleaned_url = spotify_parser.clean_url(url)
     elif deezer_parser.is_valid_url(url):
         streaming_service_type = StreamingServiceType.DEEZER
         link_type = deezer_parser.get_link_type(url)
-        cleaned_url = deezer_parser.clean_url(url, link_type)
+        cleaned_url = deezer_parser.clean_url(url)
 
     # If link was resolved correctly, save or update it
     if link_type is not None and link_type != 0:
