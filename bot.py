@@ -1,12 +1,14 @@
 from collections import defaultdict
+from uuid import uuid4
+
 from peewee import fn, SQL
 from app.music.deezer import DeezerParser
 from app.music.spotify import SpotifyParser
-from app.music.music import StreamingServiceType, LinkType
+from app.music.music import StreamingServiceType, LinkType, EntityType
 from app.db.db import db, User, Chat, Link
 from app.responser import Responser, ResponseType
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
-from telegram import ParseMode
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, InlineQueryHandler
+from telegram import ParseMode, InlineQueryResultArticle, InputTextMessageContent
 from dotenv import load_dotenv
 from os import getenv as getenv
 import app.util.utils as utils
@@ -31,6 +33,36 @@ db.create_tables([User, Chat, Link])
 def error(bot, update, error):
     """Log Errors"""
     logger.warning('Update "%s" caused error "%s"', update, error)
+
+
+def search(bot, update):
+    spotify_parser = SpotifyParser()
+    results = []
+
+    input = update.inline_query.query
+
+    entity_type = input.split(' ', 1)[0]
+    query = input.replace(entity_type, '').strip()
+    valid_entity_type = False
+
+    if entity_type == EntityType.ARTIST.value:
+        valid_entity_type = True
+    elif entity_type == EntityType.ALBUM.value:
+        valid_entity_type = True
+    elif entity_type == EntityType.TRACK.value:
+        valid_entity_type = True
+
+    if valid_entity_type and len(query) >= 3:
+        search_result = spotify_parser.search_link(query, entity_type)
+        for result in search_result:
+            results.append(InlineQueryResultArticle(
+                id=result['id'],
+                thumb_url=result['album']['images'][0]['url'] if entity_type == EntityType.TRACK.value else
+                result['images'][0]['url'],
+                title=result['name'],
+                input_message_content=InputTextMessageContent(result['external_urls']['spotify'])))
+
+    update.inline_query.answer(results)
 
 
 def music(bot, update):
@@ -127,11 +159,11 @@ def find_streaming_link_in_text(bot, update):
     if spotify_parser.is_valid_url(url):
         streaming_service_type = StreamingServiceType.SPOTIFY
         link_type = spotify_parser.get_link_type(url)
-        cleaned_url = spotify_parser.clean_url(url)
+        cleaned_url = spotify_parser.clean_url(url, link_type)
     elif deezer_parser.is_valid_url(url):
         streaming_service_type = StreamingServiceType.DEEZER
         link_type = deezer_parser.get_link_type(url)
-        cleaned_url = deezer_parser.clean_url(url)
+        cleaned_url = deezer_parser.clean_url(url, link_type)
 
     # If link was resolved correctly, save or update it
     if link_type is not None and link_type != 0:
@@ -215,6 +247,7 @@ def main():
     dispatcher.add_handler(CommandHandler(
         'music_from_beginning', music_from_beginning))
     dispatcher.add_handler(CommandHandler('stats', stats))
+    dispatcher.add_handler(InlineQueryHandler(search))
 
     # Non command handlers
     dispatcher.add_handler(MessageHandler(

@@ -1,6 +1,13 @@
 from enum import Enum
 
 
+class EntityType(Enum):
+    """Streaming service entity types"""
+    ARTIST = 'artist'
+    ALBUM = 'album'
+    TRACK = 'track'
+
+
 class LinkType(Enum):
     """Different link types"""
     ARTIST = 'ARTIST'
