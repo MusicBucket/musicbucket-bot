@@ -20,6 +20,10 @@ class DeezerParser(StreamingServiceParser):
             return LinkType.TRACK
         return None
 
+    def search_link(self, query, entity_type):
+        """Not implemented"""
+        pass
+
     def get_link_info(self, url, link_type):
         """
         Resolves the name of the artist/album/track from a link
@@ -28,7 +32,7 @@ class DeezerParser(StreamingServiceParser):
         Track: 'http://www.deezer.com/track/71999722'
         """
         # Gets the entity id from the Deezer link:
-        entity_id = url[url.rfind('/') + 1:]
+        entity_id = self.get_entity_id_from_url(url)
         link_info = LinkInfo(link_type=link_type)
         if link_type == LinkType.ARTIST:
             artist = deezer_client.get_artist(entity_id)
@@ -67,7 +71,10 @@ class DeezerParser(StreamingServiceParser):
 
         return link_info
 
-    def clean_url(self, url):
+    def get_entity_id_from_url(self, url):
+        return url[url.rfind('/') + 1:]
+
+    def clean_url(self, url, link_type):
         """Receives a Deezer url and returns it cleaned"""
         if url.rfind('?') > -1:
             return url[:url.rfind('?')]

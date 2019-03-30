@@ -4,7 +4,7 @@ import spotipy
 from dotenv import load_dotenv
 from spotipy.oauth2 import SpotifyClientCredentials
 
-from app.music.music import LinkType, LinkInfo
+from app.music.music import LinkType, LinkInfo, EntityType
 from app.music.streaming_service import StreamingServiceParser
 
 # Spotify client init
@@ -28,15 +28,34 @@ class SpotifyParser(StreamingServiceParser):
             return LinkType.TRACK
         return None
 
+    def search_link(self, query, entity_type):
+        """
+        Searches for a list of coincidences in Spotify
+        :param query: query string term
+        :param entity_type: EntityType
+        :return: list of results
+        """
+        search_result = spotipy_client.search(query, type=entity_type)
+
+        if entity_type == EntityType.ARTIST.value:
+            search_result = search_result['artists']['items']
+        elif entity_type == EntityType.ALBUM.value:
+            search_result = search_result['albums']['items']
+        elif entity_type == EntityType.TRACK.value:
+            search_result = search_result['tracks']['items']
+
+        return search_result
+
     def get_link_info(self, url, link_type):
-        """Resolves the name and the genre of the artist/album/track from a link
-            Artist: 'spotify:artist:id'
-            Album: 'spotify:album:id'
-            Track: 'spotify:track:id'
+        """
+        Resolves the name and the genre of the artist/album/track from a link
+        Artist: 'spotify:artist:id'
+        Album: 'spotify:album:id'
+        Track: 'spotify:track:id'
         """
         # Gets the entity id from the Spotify link:
         # https://open.spotify.com/album/*1yXlpa0dqoQCfucRNUpb8N*?si=GKPFOXTgRq2SLEE-ruNfZQ
-        entity_id = url[url.rfind('/') + 1:]
+        entity_id = self.get_entity_id_from_url(url)
         link_info = LinkInfo(link_type=link_type)
         if link_type == LinkType.ARTIST:
             uri = f'spotify:artist:{entity_id}'

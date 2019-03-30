@@ -11,11 +11,19 @@ class StreamingServiceParser(abc.ABC):
         pass
 
     @abc.abstractmethod
+    def search_link(self, query, entity_type):
+        pass
+
+    @abc.abstractmethod
     def get_link_info(self, url, link_type):
         pass
 
     @abc.abstractmethod
-    def clean_url(self, url):
+    def get_entity_id_from_url(self, url):
+        pass
+
+    @abc.abstractmethod
+    def clean_url(self, url, link_type):
         pass
 
     @abc.abstractmethod
