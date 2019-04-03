@@ -20,6 +20,7 @@ load_dotenv()
 
 # Enable logging
 logging.basicConfig(
+    filename='music-bucket-bot.log',
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO)
 
