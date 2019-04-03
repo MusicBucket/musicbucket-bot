@@ -40,10 +40,10 @@ def search(bot, update):
     spotify_parser = SpotifyParser()
     results = []
 
-    input = update.inline_query.query
+    user_input = update.inline_query.query
 
-    entity_type = input.split(' ', 1)[0]
-    query = input.replace(entity_type, '').strip()
+    entity_type = user_input.split(' ', 1)[0]
+    query = user_input.replace(entity_type, '').strip()
     valid_entity_type = False
 
     if entity_type == EntityType.ARTIST.value:
@@ -54,6 +54,7 @@ def search(bot, update):
         valid_entity_type = True
 
     if valid_entity_type and len(query) >= 3:
+        logger.info(f"Searching for entity:'{entity_type}' with query:'{query}'")
         search_result = spotify_parser.search_link(query, entity_type)
         for result in search_result:
             thumb_url = ''
@@ -112,8 +113,7 @@ def music(bot, update):
 
     update.message.reply_text(response, disable_web_page_preview=True,
                               parse_mode=ParseMode.HTML)
-    logger.info("'/music' command was called by user {} in chat {}".format(
-        update.message.from_user.id, update.message.chat_id))
+    logger.info(f"'/music' command was called by user {update.message.from_user.id} in chat {update.message.chat_id}")
 
 
 def music_from_beginning(bot, update):
@@ -136,8 +136,9 @@ def music_from_beginning(bot, update):
         all_time_links, ResponseType.FROM_THE_BEGINNING)
     update.message.reply_text(response, disable_web_page_preview=True,
                               parse_mode=ParseMode.HTML)
-    logger.info("'/music_from_beginning' command was called by user {} in chat {}".format(
-        update.message.from_user.id, update.message.chat_id))
+    logger.info(
+        f"'/music_from_beginning' command was called by user {update.message.from_user.id} \
+         in chat {update.message.chat_id}")
 
 
 def stats(bot, update):
@@ -156,8 +157,8 @@ def stats(bot, update):
     update.message.reply_text(response, disable_web_page_preview=True,
                               parse_mode=ParseMode.HTML)
 
-    logger.info("'/stats' command was called by user {} in the chat {}".format(
-        update.message.from_user.id, update.message.chat_id))
+    logger.info(
+        f"'/stats' command was called by user {update.message.from_user.id} in the chat {update.message.chat_id}")
 
 
 def find_streaming_link_in_text(bot, update):
@@ -209,7 +210,7 @@ def _save_or_update_user_chat_link(update, cleaned_url, link_type, streaming_ser
         id=update.message.chat_id,
         name=update.message.chat.title or update.message.chat.username or update.message.chat.first_name)
     if chat_created:
-        logger.info("Chat '{}' with id '{}' was created".format(chat.name, chat.id))
+        logger.info(f"Chat '{chat.name}' with id '{chat.id}' was created")
 
     # Update the link if it exists for a chat, create if it doesn't exist
     link = Link.get_or_none((Link.url == cleaned_url) & (Link.chat == chat))
