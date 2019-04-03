@@ -31,6 +31,19 @@ class Chat(Model):
         return 'Chat {}-{}'.format(self.id, self.name)
 
 
+class Playlist(Model):
+    title = CharField()
+    url = CharField()
+    added_at = DateTimeField()
+    chat = ForeignKeyField(Chat, backref='playlist')
+
+    class Meta:
+        database = db
+
+    def __str__(self):
+        return f'Playlist {self.title} of chat {self.chat.name}'
+
+
 class Link(Model):
     url = CharField()
     link_type = CharField()
