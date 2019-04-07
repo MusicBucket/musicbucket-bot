@@ -23,6 +23,10 @@ class StreamingServiceParser(abc.ABC):
         pass
 
     @abc.abstractmethod
+    def get_user_id_from_url(self, url):
+        pass
+
+    @abc.abstractmethod
     def clean_url(self, url, link_type):
         pass
 

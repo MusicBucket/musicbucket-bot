@@ -6,8 +6,10 @@ env/
 
 db.sqlite
 Pipfile.lock
+*.log
 
 
+.cache*
 app/__pycache__
 db/__pycache__
 music/__pycache__

@@ -20,28 +20,32 @@ class User(Model):
         return 'User {}'.format(self.id)
 
 
+class Playlist(Model):
+    spotify_id = CharField()
+    name = CharField()
+    description = CharField(null=True)
+    owner_username = CharField()
+    owner_id = CharField()
+    url = CharField()
+    added_at = DateTimeField()
+
+    class Meta:
+        database = db
+
+    def __str__(self):
+        return f'Playlist {self.name} by {self.owner_username} @ {self.chat.name}'
+
+
 class Chat(Model):
     id = CharField(primary_key=True)
     name = CharField()
+    playlist = ForeignKeyField(Playlist, backref='chat', null=True, on_delete='CASCADE')
 
     class Meta:
         database = db
 
     def __str__(self):
         return 'Chat {}-{}'.format(self.id, self.name)
-
-
-class Playlist(Model):
-    title = CharField()
-    url = CharField()
-    added_at = DateTimeField()
-    chat = ForeignKeyField(Chat, backref='playlist')
-
-    class Meta:
-        database = db
-
-    def __str__(self):
-        return f'Playlist {self.title} of chat {self.chat.name}'
 
 
 class Link(Model):

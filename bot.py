@@ -1,11 +1,10 @@
 from collections import defaultdict
-from uuid import uuid4
 
-from peewee import fn, SQL, Entity
+from peewee import fn, SQL
 from app.music.deezer import DeezerParser
 from app.music.spotify import SpotifyParser
 from app.music.music import StreamingServiceType, LinkType, EntityType
-from app.db.db import db, User, Chat, Link
+from app.db.db import db, User, Chat, Link, Playlist
 from app.responser import Responser, ResponseType
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, InlineQueryHandler
 from telegram import ParseMode, InlineQueryResultArticle, InputTextMessageContent
@@ -20,7 +19,7 @@ load_dotenv()
 
 # Enable logging
 logging.basicConfig(
-    filename='music-bucket-bot.log',
+    # filename='music-bucket-bot.log',
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO)
 
@@ -28,12 +27,16 @@ logger = logging.getLogger(__name__)
 
 # Setup Database
 db.connect()
-db.create_tables([User, Chat, Link])
+db.create_tables([User, Chat, Link, Playlist])
 
 
 def error(bot, update, error):
     """Log Errors"""
     logger.warning('Update "%s" caused error "%s"', update, error)
+
+
+def start(bot, update):
+    create_playlist()
 
 
 def search(bot, update):
@@ -141,6 +144,61 @@ def music_from_beginning(bot, update):
          in chat {update.message.chat_id}")
 
 
+def create_playlist(bot, update):
+    """Initializes a Spotify playlist for the current chat"""
+    spotify_parser = SpotifyParser()
+    responser = Responser()
+
+    user, chat = _update_users_and_chats(update)
+
+    if chat.playlist is None:
+        spotify_playlist = spotify_parser.create_playlist(chat.name)
+        response = responser.playlist_created_successfully(spotify_playlist)
+        playlist = Playlist.create(
+            spotify_id=spotify_playlist['id'],
+            name=spotify_playlist['name'],
+            description=spotify_playlist['description'],
+            owner_username=spotify_playlist['owner']['display_name'],
+            owner_id=spotify_playlist['owner']['id'],
+            url=spotify_playlist['external_urls']['spotify'],
+            user=user,
+            added_at=datetime.datetime.now())
+        playlist.save()
+        chat.playlist = playlist
+        chat.save()
+
+        logger.info(
+            f"'/create_playlist' command was called successfully: \
+            {spotify_playlist['external_urls']['spotify']} in chat {update.message.chat_id}")
+    else:
+        response = responser.chat_has_already_playlist()
+        logger.info(
+            f"'/create_playlist' command was failed because the current chat has a playlist already.")
+    update.message.reply_text(response, disable_web_page_preview=True,
+                              parse_mode=ParseMode.HTML)
+
+
+def playlist(bot, update):
+    """
+    Gets the current chat Spotify playlist. If there's any.
+    """
+    responser = Responser()
+    spotify_parser = SpotifyParser()
+
+    user, chat = _update_users_and_chats(update)
+    playlist = chat.playlist
+
+    if playlist is not None:
+        spotify_playlist = spotify_parser.get_playlist(playlist.owner_id, playlist.spotify_id)
+        response = responser.playlist(spotify_playlist, playlist)
+    else:
+        # TODO: response = responser.chat_no_playlist()
+        response = 'The current chat has not playlist'
+
+    update.message.reply_text(response, disable_web_page_preview=True,
+                              parse_mode=ParseMode.HTML)
+
+
 def stats(bot, update):
     """
     Command /stats
@@ -195,22 +253,7 @@ def _save_or_update_user_chat_link(update, cleaned_url, link_type, streaming_ser
                                    deezer_parser):
     link_updated = False
 
-    # Create or get the user that sent the link
-    user, user_created = User.get_or_create(
-        id=update.message.from_user.id,
-        username=update.message.from_user.username,
-        first_name=update.message.from_user.first_name)
-    if user_created:
-        logger.info("User '{}' with id '{}' was created".format(
-            user.username if user.username else user.first_name,
-            user.id))
-
-    # Create or get the chat where the link was sent
-    chat, chat_created = Chat.get_or_create(
-        id=update.message.chat_id,
-        name=update.message.chat.title or update.message.chat.username or update.message.chat.first_name)
-    if chat_created:
-        logger.info(f"Chat '{chat.name}' with id '{chat.id}' was created")
+    user, chat = _update_users_and_chats(update)
 
     # Update the link if it exists for a chat, create if it doesn't exist
     link = Link.get_or_none((Link.url == cleaned_url) & (Link.chat == chat))
@@ -241,6 +284,10 @@ def _save_or_update_user_chat_link(update, cleaned_url, link_type, streaming_ser
             user=user,
             chat=chat)
 
+        # Add it to the chat's playlist, if there's any
+        if chat.playlist is not None:
+            spotify_parser.add_track_to_playlist(cleaned_url, chat.playlist, link_type)
+
     # Log link operation
     link_operation = 'Saved' if not link_updated else 'Updated'
 
@@ -250,9 +297,30 @@ def _save_or_update_user_chat_link(update, cleaned_url, link_type, streaming_ser
     elif link_type == LinkType.ALBUM:
         logger.info("'{}' link '{}' of type '{}' in chat '{}'".format(
             link_operation, link.album_name, link.link_type, link.chat.name))
-    elif link_type == LinkType.TRACK:
+    elif link_type == LinkType.TRACK:  # TODO: LinkType.PLAYLIST
         logger.info("'{}' link '{}' of type '{}' in chat '{}'".format(
             link_operation, link.track_name, link.link_type, link.chat.name))
+
+
+def _update_users_and_chats(update):
+    # Create or get the user that sent the link
+    user, user_created = User.get_or_create(
+        id=update.message.from_user.id,
+        username=update.message.from_user.username,
+        first_name=update.message.from_user.first_name)
+    if user_created:
+        logger.info("User '{}' with id '{}' was created".format(
+            user.username if user.username else user.first_name,
+            user.id))
+
+    # Create or get the chat where the link was sent
+    chat, chat_created = Chat.get_or_create(
+        id=update.message.chat_id,
+        name=update.message.chat.title or update.message.chat.username or update.message.chat.first_name)
+    if chat_created:
+        logger.info(f"Chat '{chat.name}' with id '{chat.id}' was created")
+
+    return user, chat
 
 
 def main():
@@ -263,9 +331,14 @@ def main():
     dispatcher = updater.dispatcher
 
     # Register commands
+    dispatcher.add_handler(CommandHandler('start', start))
     dispatcher.add_handler(CommandHandler('music', music))
     dispatcher.add_handler(CommandHandler(
         'music_from_beginning', music_from_beginning))
+    dispatcher.add_handler(CommandHandler(
+        'playlist', playlist))
+    dispatcher.add_handler(CommandHandler(
+        'create_playlist', create_playlist))
     dispatcher.add_handler(CommandHandler('stats', stats))
     dispatcher.add_handler(InlineQueryHandler(search))
 
