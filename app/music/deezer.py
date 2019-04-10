@@ -74,7 +74,7 @@ class DeezerParser(StreamingServiceParser):
     def get_entity_id_from_url(self, url):
         return url[url.rfind('/') + 1:]
 
-    def clean_url(self, url, link_type):
+    def clean_url(self, url):
         """Receives a Deezer url and returns it cleaned"""
         if url.rfind('?') > -1:
             return url[:url.rfind('?')]
