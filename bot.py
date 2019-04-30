@@ -20,7 +20,7 @@ load_dotenv()
 
 # Enable logging
 logging.basicConfig(
-    filename='music-bucket-bot.log',
+    # filename='music-bucket-bot.log',
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO)
 
@@ -116,17 +116,32 @@ def music(bot, update):
     logger.info(f"'/music' command was called by user {update.message.from_user.id} in chat {update.message.chat_id}")
 
 
-def music_from_beginning(bot, update):
+def music_from_beginning(bot, update, args):
     """
-    Command /music_from_beginning
-    Gets the links sent by all the users of the chat from the beginning
+    Command /music_from_beginning @username
+    Gets the links sent by an specific username of the chat from the beginning
     """
     all_time_links = defaultdict(list)
 
+    try:
+        username = args[0]
+        username = username.replace('@', '')
+    except IndexError:
+        response = Responser.music_from_beginning_no_username()
+        update.message.reply_text(response, disable_web_page_preview=True,
+                                  parse_mode=ParseMode.HTML)
+        return
+
     links = Link.select() \
-        .join(Chat) \
-        .where(Chat.id == update.message.chat_id) \
+        .join(Chat, on=(Chat.id == Link.chat)) \
+        .join(User, on=(User.id == Link.user)) \
+        .where((Chat.id == update.message.chat_id) & (User.username == username)) \
         .order_by(Link.updated_at.asc(), Link.created_at.asc())
+
+    if len(links) == 0:
+        response = Responser.no_links_found(username)
+        update.message.reply_text(response, disable_web_page_preview=True, parse_mode=ParseMode.HTML)
+        return
 
     for link in links:
         all_time_links[link.user].append(link)
@@ -134,11 +149,10 @@ def music_from_beginning(bot, update):
 
     response = Responser.links_by_user(
         all_time_links, ResponseType.FROM_THE_BEGINNING)
-    update.message.reply_text(response, disable_web_page_preview=True,
-                              parse_mode=ParseMode.HTML)
+    Responser.reply_message(update, response)
     logger.info(
         f"'/music_from_beginning' command was called by user {update.message.from_user.id} \
-         in chat {update.message.chat_id}")
+         in chat {update.message.chat_id} for the user {username}")
 
 
 def stats(bot, update):
@@ -265,7 +279,7 @@ def main():
     # Register commands
     dispatcher.add_handler(CommandHandler('music', music))
     dispatcher.add_handler(CommandHandler(
-        'music_from_beginning', music_from_beginning))
+        'music_from_beginning', music_from_beginning, pass_args=True))
     dispatcher.add_handler(CommandHandler('stats', stats))
     dispatcher.add_handler(InlineQueryHandler(search))
 

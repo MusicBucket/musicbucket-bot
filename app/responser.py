@@ -1,5 +1,8 @@
 import logging
+import time
 from enum import Enum
+
+from telegram import ParseMode
 
 from app.music.music import LinkType
 from emoji import emojize
@@ -14,6 +17,35 @@ class ResponseType(Enum):
 
 
 class Responser:
+    MAX_MESSAGE_LENGTH = 4096
+
+    @classmethod
+    def reply_message(cls, update, message):
+        if len(message) <= cls.MAX_MESSAGE_LENGTH:
+            update.message.reply_text(message, disable_web_page_preview=True,
+                                      parse_mode=ParseMode.HTML)
+            return
+
+        parts = []
+        while len(message) > 0:
+            if len(message) > cls.MAX_MESSAGE_LENGTH:
+                part = message[:cls.MAX_MESSAGE_LENGTH]
+                first_lnbr = part.rfind('\n')
+                if first_lnbr != -1:
+                    parts.append(part[:first_lnbr])
+                    message = message[(first_lnbr + 1):]
+                else:
+                    parts.append(part)
+                    message = message[cls.MAX_MESSAGE_LENGTH:]
+            else:
+                parts.append(message)
+                break
+
+        for part in parts:
+            update.message.reply_text(part, disable_web_page_preview=True,
+                                      parse_mode=ParseMode.HTML)
+            time.sleep(1)
+        return
 
     @staticmethod
     def links_by_user(user_links, response_type):
@@ -76,4 +108,17 @@ class Responser:
             msg += '- {} <strong>{}:</strong> {}\n'.format(emojize(':baby:', use_aliases=True),
                                                            user.username or user.firstname,
                                                            user.links)
+        return msg
+
+    @staticmethod
+    def music_from_beginning_no_username():
+        msg = 'Command usage /music_from_beginning @username'
+        return msg
+
+    @staticmethod
+    def no_links_found(username):
+        if username:
+            msg = f'No links were found for this username {username}'
+        else:
+            msg = 'No links were found.'
         return msg
