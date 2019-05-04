@@ -23,7 +23,7 @@ with the related info:
 - Install ```pyenv``` and ```pipenv```
 - Do ```pipenv install``` inside the folder.
 - Copy the ```.env.dist``` file to ```.env``` and **fill the variables** with your Telegram and Spotify data.
-- Execute ```python bot.py```
+- Execute ```python main.py```
 
 ## License
 The content of this project is licensed under the GNU/GPLv3 license. See LICENSE file.
