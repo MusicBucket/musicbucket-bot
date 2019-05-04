@@ -57,13 +57,12 @@ class SpotifyClient:
         # Gets the entity id from the Spotify link:
         # https://open.spotify.com/album/*1yXlpa0dqoQCfucRNUpb8N*?si=GKPFOXTgRq2SLEE-ruNfZQ
         entity_id = self.get_entity_id_from_url(url)
-        link_info = LinkInfo(link_type=link_type)
+        link_info = LinkInfo(link_type=link_type, cleaned_url=url)
         if link_type == LinkType.ARTIST:
             uri = f'spotify:artist:{entity_id}'
             artist = self.client.artist(uri)
             link_info.artist = artist['name']
-            link_info.genre = artist['genres'][0] if len(
-                artist['genres']) > 0 else None
+            link_info.genres = artist['genres']
 
         elif link_type == LinkType.ALBUM:
             uri = f'spotify:album:{entity_id}'
@@ -71,11 +70,10 @@ class SpotifyClient:
             link_info.album = album['name']
             link_info.artist = album['artists'][0]['name']
             if len(album['genres']) > 0:
-                link_info.genre = album['genres'][0]
+                link_info.genres = album['genres']
             else:
                 album_artist = self.client.artist(album['artists'][0]['id'])
-                link_info.genre = album_artist['genres'][0] if len(
-                    album_artist['genres']) > 0 else None
+                link_info.genres = album_artist['genres']
 
         elif link_type == LinkType.TRACK:
             uri = f'spotify:track:{entity_id}'
@@ -84,8 +82,7 @@ class SpotifyClient:
             link_info.album = track['album']['name']
             link_info.artist = track['artists'][0]['name']
             track_artist = self.client.artist(track['artists'][0]['id'])
-            link_info.genre = track_artist['genres'][0] if len(
-                track_artist['genres']) > 0 else None
+            link_info.genres = track_artist['genres']
 
         return link_info
 

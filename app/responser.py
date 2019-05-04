@@ -99,8 +99,24 @@ class Responser:
                                                            user.links)
         self._reply(msg)
 
-    def reply_save_link(self, link):
-        msg = ''
+    def reply_save_link(self, link_info, updated):
+        msg = '<strong>{}: </strong>'.format(
+            'Saved' if not updated else 'Updated')
+        genres = ', '.join(link_info.genres)
+
+        if link_info.link_type == LinkType.ARTIST:
+
+            msg += '{} <strong>{}</strong>\n'.format(emojize(':busts_in_silhouette:', use_aliases=True),
+                                    link_info.artist)
+        elif link_info.link_type == LinkType.ALBUM:
+            msg += '{} <strong>{}</strong> - <strong>{}</strong>\n'.format(emojize(':cd:', use_aliases=True),
+                                         link_info.artist,
+                                         link_info.album)
+        elif link_info.link_type == LinkType.TRACK:
+            msg += '{} {} by <strong>{}</strong>\n'.format(emojize(':musical_note:', use_aliases=True),
+                                          link_info.track,
+                                          link_info.artist)
+        msg += '<strong>Genres:</strong> {}'.format(genres)
         self._reply(msg)
 
     def show_search_results(self, results):

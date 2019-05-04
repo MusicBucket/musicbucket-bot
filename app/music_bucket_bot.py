@@ -238,7 +238,14 @@ class MusicBucketBot:
         cleaned_url = self.spotify_client.clean_url(url)
         user = self._save_user()
         chat = self._save_chat()
-        self._save_link(cleaned_url, link_type, user, chat)
+
+        link_info = self.spotify_client.get_link_info(cleaned_url, link_type)
+        if link_info is None:
+            logger.error("Error ocurred getting link info")
+            return
+
+        link_updated = self._save_link(link_info, user, chat)
+        self.responser.reply_save_link(link_info, link_updated)
 
     # Operations
     def _save_user(self):
@@ -263,40 +270,39 @@ class MusicBucketBot:
 
         return chat
 
-    def _save_link(self, cleaned_url, link_type, user, chat):
+    def _save_link(self, link_info, user, chat):
         # Update the link if it exists for a chat, create if it doesn't exist
-        link = Link.get_or_none((Link.url == cleaned_url) & (Link.chat == chat))
+        link = Link.get_or_none((Link.url == link_info.url) & (Link.chat == chat))
+        link_updated = False
         if link is not None:
             # If link already exists, set updated_at and last_update_user to current
             link.apply_update(user)
             link.save()
             link_updated = True
         else:
-            # If the link doesn't exists, get link info based on the link type and save it
-            link_info = self.spotify_client.get_link_info(cleaned_url, link_type)
-            if link_info is None:
-                logger.error("Error ocurred getting link info")
 
             link = Link.create(
-                url=cleaned_url,
-                link_type=link_type.value,
+                url=link_info.url,
+                link_type=link_info.link_type.value,
                 created_at=datetime.datetime.now(),
                 artist_name=link_info.artist,
                 album_name=link_info.album,
                 track_name=link_info.track,
-                genre=link_info.genre,
+                genre=link_info.genres[0] if len(link_info.genres) > 0 else None,
                 user=user,
                 chat=chat)
 
         # Log link operation
         link_operation = 'Saved' if not link_updated else 'Updated'
 
-        if link_type == LinkType.ARTIST:
+        if link_info.link_type == LinkType.ARTIST:
             logger.info("'{}' link '{}' of type '{}' in chat '{}'".format(
                 link_operation, link.artist_name, link.link_type, link.chat.name))
-        elif link_type == LinkType.ALBUM:
+        elif link_info.link_type == LinkType.ALBUM:
             logger.info("'{}' link '{}' of type '{}' in chat '{}'".format(
                 link_operation, link.album_name, link.link_type, link.chat.name))
-        elif link_type == LinkType.TRACK:
+        elif link_info.link_type == LinkType.TRACK:
             logger.info("'{}' link '{}' of type '{}' in chat '{}'".format(
                 link_operation, link.track_name, link.link_type, link.chat.name))
+
+        return link_updated

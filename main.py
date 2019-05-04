@@ -34,10 +34,12 @@ def main():
     music_bucket_bot_factory = MusicBucketBotFactory()
 
     # Register commands
-    dispatcher.add_handler(CommandHandler('music', music_bucket_bot_factory.handle_music_command))
-    dispatcher.add_handler(CommandHandler(
-        'music_from_beginning', music_bucket_bot_factory.handle_music_from_beginning_command, pass_args=True))
-    dispatcher.add_handler(CommandHandler('stats', music_bucket_bot_factory.handle_stats_command))
+    dispatcher.add_handler(CommandHandler('music',
+                                          music_bucket_bot_factory.handle_music_command))
+    dispatcher.add_handler(CommandHandler('music_from_beginning',
+                                          music_bucket_bot_factory.handle_music_from_beginning_command, pass_args=True))
+    dispatcher.add_handler(CommandHandler('stats',
+                                          music_bucket_bot_factory.handle_stats_command))
     dispatcher.add_handler(InlineQueryHandler(music_bucket_bot_factory.handle_search_command))
 
     # Non command handlers
