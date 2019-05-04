@@ -1,10 +1,8 @@
 from collections import defaultdict
-from uuid import uuid4
 
-from peewee import fn, SQL, Entity
-from app.music.deezer import DeezerParser
+from peewee import fn, SQL
 from app.music.spotify import SpotifyParser
-from app.music.music import StreamingServiceType, LinkType, EntityType
+from app.music.music import LinkType, EntityType
 from app.db.db import db, User, Chat, Link
 from app.responser import Responser, ResponseType
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, InlineQueryHandler
@@ -182,31 +180,22 @@ def find_streaming_link_in_text(bot, update):
     It also saves the user and the chat if they don't exist @ database
     """
     spotify_parser = SpotifyParser()
-    deezer_parser = DeezerParser()
 
     link_type = None
-    streaming_service_type = None
     url = utils.extract_url_from_message(update.message.text)
     cleaned_url = ''
 
-    # Check if is a Spotify/Deezer url
+    # Check if is a Spotify url
     if spotify_parser.is_valid_url(url):
-        streaming_service_type = StreamingServiceType.SPOTIFY
         link_type = spotify_parser.get_link_type(url)
         cleaned_url = spotify_parser.clean_url(url)
-    elif deezer_parser.is_valid_url(url):
-        streaming_service_type = StreamingServiceType.DEEZER
-        link_type = deezer_parser.get_link_type(url)
-        cleaned_url = deezer_parser.clean_url(url)
 
     # If link was resolved correctly, save or update it
     if link_type is not None and link_type != 0:
-        _save_or_update_user_chat_link(update, cleaned_url, link_type, streaming_service_type, spotify_parser,
-                                       deezer_parser)
+        _save_or_update_user_chat_link(update, cleaned_url, link_type, spotify_parser)
 
 
-def _save_or_update_user_chat_link(update, cleaned_url, link_type, streaming_service_type, spotify_parser,
-                                   deezer_parser):
+def _save_or_update_user_chat_link(update, cleaned_url, link_type, spotify_parser):
     link_updated = False
 
     # Create or get the user that sent the link
@@ -235,18 +224,13 @@ def _save_or_update_user_chat_link(update, cleaned_url, link_type, streaming_ser
         link_updated = True
     else:
         # If the link doesn't exists, get link info based on the link type and save it
-        link_info = None
-        if streaming_service_type == StreamingServiceType.SPOTIFY:
-            link_info = spotify_parser.get_link_info(cleaned_url, link_type)
-        elif streaming_service_type == StreamingServiceType.DEEZER:
-            link_info = deezer_parser.get_link_info(cleaned_url, link_type)
+        link_info = spotify_parser.get_link_info(cleaned_url, link_type)
         if link_info is None:
             logger.error("Error ocurred getting link info")
 
         link = Link.create(
             url=cleaned_url,
             link_type=link_type.value,
-            streaming_service_type=streaming_service_type.value,
             created_at=datetime.datetime.now(),
             artist_name=link_info.artist,
             album_name=link_info.album,
@@ -267,6 +251,8 @@ def _save_or_update_user_chat_link(update, cleaned_url, link_type, streaming_ser
     elif link_type == LinkType.TRACK:
         logger.info("'{}' link '{}' of type '{}' in chat '{}'".format(
             link_operation, link.track_name, link.link_type, link.chat.name))
+
+    return link
 
 
 def main():

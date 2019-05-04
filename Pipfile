@@ -7,7 +7,6 @@ verify_ssl = true
 pytest = "*"
 
 [packages]
-deezer-python = "*"
 python-dotenv = "*"
 python-telegram-bot = "*"
 requests = "*"

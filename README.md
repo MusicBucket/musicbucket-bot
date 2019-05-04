@@ -1,15 +1,14 @@
 # Music Bucket Bot
 
-A Telegram Bot that collects streaming services music links that users send in a chat and shows them by request, with the related info:
+A Telegram Bot that collects Spotify music links that users send in a chat and shows them by request, 
+with the related info:
 - *Artist*
 - *Album*
 - *Track*
-- *Genre*
+- *Genres*
 
 ### Currently supported music streaming services:
 - [x] Spotify
-- [x] Deezer
-- [ ] Tidal
 
 ### Commands
 - ```/music``` Retrieves the music shared in the chat from the last week. Grouped by user.

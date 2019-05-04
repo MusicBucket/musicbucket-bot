@@ -3,6 +3,8 @@ import logging
 
 from peewee import SqliteDatabase, Model, CharField, IntegerField, DateTimeField, ForeignKeyField, CompositeKey
 
+from app.music.music import StreamingServiceType
+
 logger = logging.getLogger(__name__)
 
 db = SqliteDatabase('db.sqlite', pragmas={'foreign_keys': 1})
@@ -34,7 +36,7 @@ class Chat(Model):
 class Link(Model):
     url = CharField()
     link_type = CharField()
-    streaming_service_type = CharField()
+    streaming_service_type = CharField(default=StreamingServiceType.SPOTIFY)
     created_at = DateTimeField()
     updated_at = DateTimeField(null=True)
     times_sent = IntegerField(default=1)

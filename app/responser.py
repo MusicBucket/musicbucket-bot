@@ -101,6 +101,10 @@ class Responser:
         return msg
 
     @staticmethod
+    def link_info(link):
+        return ''
+
+    @staticmethod
     def stats_by_user(users):
         msg = '<strong>Links sent by the users from the beginning in this chat:</strong> \n'
 
@@ -122,3 +126,5 @@ class Responser:
         else:
             msg = 'No links were found.'
         return msg
+
+
