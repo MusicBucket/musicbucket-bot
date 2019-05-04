@@ -5,18 +5,19 @@ from dotenv import load_dotenv
 from spotipy.oauth2 import SpotifyClientCredentials
 
 from app.music.music import LinkType, LinkInfo, EntityType
-from app.music.streaming_service import StreamingServiceParser
 
 # Spotify client init
 load_dotenv()
-client_credentials_manager = SpotifyClientCredentials(client_id=getenv(
-    'SPOTIFY_CLIENT_ID'), client_secret=getenv('SPOTIFY_CLIENT_SECRET'))
-spotipy_client = spotipy.Spotify(
-    client_credentials_manager=client_credentials_manager)
 
 
-class SpotifyParser(StreamingServiceParser):
-    """Parser class that helps to identify which type of Spotify link is"""
+class SpotifyClient:
+    """Spotify client that helps to manage and get info from a Spotify link"""
+
+    def __init__(self):
+        client_credentials_manager = SpotifyClientCredentials(client_id=getenv(
+            'SPOTIFY_CLIENT_ID'), client_secret=getenv('SPOTIFY_CLIENT_SECRET'))
+        self.client = spotipy.Spotify(
+            client_credentials_manager=client_credentials_manager)
 
     def get_link_type(self, url):
         """Resolves the Spotify link type"""
@@ -35,7 +36,7 @@ class SpotifyParser(StreamingServiceParser):
         :param entity_type: EntityType
         :return: list of results
         """
-        search_result = spotipy_client.search(query, type=entity_type)
+        search_result = self.client.search(query, type=entity_type)
 
         if entity_type == EntityType.ARTIST.value:
             search_result = search_result['artists']['items']
@@ -59,30 +60,30 @@ class SpotifyParser(StreamingServiceParser):
         link_info = LinkInfo(link_type=link_type)
         if link_type == LinkType.ARTIST:
             uri = f'spotify:artist:{entity_id}'
-            artist = spotipy_client.artist(uri)
+            artist = self.client.artist(uri)
             link_info.artist = artist['name']
             link_info.genre = artist['genres'][0] if len(
                 artist['genres']) > 0 else None
 
         elif link_type == LinkType.ALBUM:
             uri = f'spotify:album:{entity_id}'
-            album = spotipy_client.album(uri)
+            album = self.client.album(uri)
             link_info.album = album['name']
             link_info.artist = album['artists'][0]['name']
             if len(album['genres']) > 0:
                 link_info.genre = album['genres'][0]
             else:
-                album_artist = spotipy_client.artist(album['artists'][0]['id'])
+                album_artist = self.client.artist(album['artists'][0]['id'])
                 link_info.genre = album_artist['genres'][0] if len(
                     album_artist['genres']) > 0 else None
 
         elif link_type == LinkType.TRACK:
             uri = f'spotify:track:{entity_id}'
-            track = spotipy_client.track(uri)
+            track = self.client.track(uri)
             link_info.track = track['name']
             link_info.album = track['album']['name']
             link_info.artist = track['artists'][0]['name']
-            track_artist = spotipy_client.artist(track['artists'][0]['id'])
+            track_artist = self.client.artist(track['artists'][0]['id'])
             link_info.genre = track_artist['genres'][0] if len(
                 track_artist['genres']) > 0 else None
 
