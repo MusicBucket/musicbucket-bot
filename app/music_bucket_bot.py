@@ -182,7 +182,11 @@ class MusicBucketBot:
             .order_by(Link.updated_at.asc(), Link.created_at.asc())
 
         artists_ids = [self.spotify_client.get_entity_id_from_url(link.url) for link in links]
-        track_recommendations = self.spotify_client.get_recommendations(artists_ids)
+
+        if len(artists_ids) == 0:
+            track_recommendations = []
+        else:
+            track_recommendations = self.spotify_client.get_recommendations(artists_ids)
         self.responser.reply_recommendations(track_recommendations)
 
         logger.info(f"'/recommendations' command was called by user {self.update.message.from_user.id} "
