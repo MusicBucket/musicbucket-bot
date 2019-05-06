@@ -86,6 +86,11 @@ class SpotifyClient:
 
         return link_info
 
+    def get_recommendations(self, seed_artists):
+        """Get track recommendations based on a list of max. 5 artist seeds"""
+        tracks = self.client.recommendations(seed_artists)
+        return tracks
+
     def get_entity_id_from_url(self, url):
         return url[url.rfind('/') + 1:]
 

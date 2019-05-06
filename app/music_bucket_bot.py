@@ -19,6 +19,7 @@ class Commands(Enum):
     SAVE_LINK = 'save_link'
     MUSIC = 'music'
     MUSIC_FROM_BEGINNING = 'music_from_beginning'
+    RECOMMENDATIONS = 'recommendations'
     STATS = 'stats'
     SEARCH = 'search'
 
@@ -40,6 +41,11 @@ class MusicBucketBotFactory:
     def handle_music_from_beginning_command(bot, update, args):
         command = Commands.MUSIC_FROM_BEGINNING
         MusicBucketBotFactory._handle(bot, update, command, args)
+
+    @staticmethod
+    def handle_recommendations(bot, update):
+        command = Commands.RECOMMENDATIONS
+        MusicBucketBotFactory._handle(bot, update, command)
 
     @staticmethod
     def handle_stats_command(bot, update):
@@ -89,6 +95,8 @@ class MusicBucketBot:
             self._music()
         elif self.command == Commands.MUSIC_FROM_BEGINNING:
             self._music_from_beginning()
+        elif self.command == Commands.RECOMMENDATIONS:
+            self._recommendations()
         elif self.command == Commands.STATS:
             self._stats()
         elif self.command == Commands.SEARCH:
@@ -157,11 +165,34 @@ class MusicBucketBot:
             f"'/music_from_beginning' command was called by user {self.update.message.from_user.id} \
                      in chat {self.update.message.chat_id} for the user {username}")
 
+    def _recommendations(self):
+        """
+        Command /recommendations
+        Returns a recommendations list based on the links sent during the last week
+        """
+        days = 7
+        now = datetime.datetime.now()
+        last_week_timedelta = datetime.timedelta(days=days)
+
+        links = Link.select(Link.url) \
+            .join(Chat) \
+            .where(Chat.id == self.update.message.chat_id) \
+            .where((Link.created_at >= now - last_week_timedelta) | (Link.updated_at >= now - last_week_timedelta)) \
+            .where(Link.link_type == LinkType.ARTIST.value) \
+            .order_by(Link.updated_at.asc(), Link.created_at.asc())
+
+        artists_ids = [self.spotify_client.get_entity_id_from_url(link.url) for link in links]
+        track_recommendations = self.spotify_client.get_recommendations(artists_ids)
+        self.responser.reply_recommendations(track_recommendations)
+
+        logger.info(f"'/recommendations' command was called by user {self.update.message.from_user.id} "
+                    f"in the chat {self.update.message.chat_id}")
+
     def _stats(self):
         """
-         Command /stats
-         Returns the number of links sent in a chat by every user
-         """
+        Command /stats
+        Returns the number of links sent in a chat by every user
+        """
         users = User.select(User, fn.Count(Link.url).alias('links')) \
             .join(Link, on=Link.user) \
             .join(Chat, on=Link.chat) \

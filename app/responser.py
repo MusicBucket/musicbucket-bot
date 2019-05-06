@@ -90,6 +90,16 @@ class Responser:
             msg += '\n'
         self._reply(msg)
 
+    def reply_recommendations(self, track_recommendations):
+        msg = 'Track recommendations of the week: \n'
+        for track in track_recommendations['tracks']:
+            msg += '{} <a href="{}">{}</a> by <strong>{}</strong>\n'.format(
+                emojize(':musical_note:', use_aliases=True),
+                track['external_urls']['spotify'],
+                track['name'],
+                track['artists'][0]['name'])
+        self._reply(msg)
+
     def reply_stats(self, users):
         msg = '<strong>Links sent by the users from the beginning in this chat:</strong> \n'
 
@@ -107,15 +117,15 @@ class Responser:
         if link_info.link_type == LinkType.ARTIST:
 
             msg += '{} <strong>{}</strong>\n'.format(emojize(':busts_in_silhouette:', use_aliases=True),
-                                    link_info.artist)
+                                                     link_info.artist)
         elif link_info.link_type == LinkType.ALBUM:
             msg += '{} <strong>{}</strong> - <strong>{}</strong>\n'.format(emojize(':cd:', use_aliases=True),
-                                         link_info.artist,
-                                         link_info.album)
+                                                                           link_info.artist,
+                                                                           link_info.album)
         elif link_info.link_type == LinkType.TRACK:
             msg += '{} {} by <strong>{}</strong>\n'.format(emojize(':musical_note:', use_aliases=True),
-                                          link_info.track,
-                                          link_info.artist)
+                                                           link_info.track,
+                                                           link_info.artist)
         msg += '<strong>Genres:</strong> {}'.format(genres)
         self._reply(msg)
 
