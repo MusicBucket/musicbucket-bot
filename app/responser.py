@@ -92,6 +92,12 @@ class Responser:
 
     def reply_recommendations(self, track_recommendations):
         msg = 'Track recommendations of the week: \n'
+
+        if len(track_recommendations) == 0:
+            msg = 'There are not recommendations for this week yet. Send some music!'
+            self._reply(msg)
+            return
+
         for track in track_recommendations['tracks']:
             msg += '{} <a href="{}">{}</a> by <strong>{}</strong>\n'.format(
                 emojize(':musical_note:', use_aliases=True),
