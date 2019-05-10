@@ -8,7 +8,7 @@ from enum import Enum
 from peewee import fn, SQL
 from telegram import InlineQueryResultArticle, InputTextMessageContent
 
-from app.db.db import User, Chat, Link
+from app.models import User, Chat, Link, Track, Artist, Album, Genre
 from app.music.music import LinkType, EntityType
 from app.music.spotify import SpotifyClient
 from app.responser import Responser
@@ -264,30 +264,140 @@ class MusicBucketBot:
 
     def _process_message(self):
         """
-       Finds the streaming url, identifies the streaming service in the text and
-       saves it to the database.
-       It also saves the user and the chat if they don't exist @ database
-       """
+        Finds the streaming url, identifies the streaming service in the text and
+        saves it to the database.
+        It also saves the user and the chat if they don't exist @ database
+        """
         url = self.link_processor.extract_url_from_message(self.update.message.text)
         link_type = self.spotify_client.get_link_type(url)
         if not self.spotify_client.is_valid_url(url):
             return
         if not link_type:
             return
+        self._process_url(url, link_type)
 
+    def _process_url(self, url, link_type):
         cleaned_url = self.spotify_client.clean_url(url)
+        entity_id = self.spotify_client.get_entity_id_from_url(cleaned_url)
         user = self._save_user()
         chat = self._save_chat()
 
-        link_info = self.spotify_client.get_link_info(cleaned_url, link_type)
-        if link_info is None:
-            logger.error("Error ocurred getting link info")
-            return
+        # Create or update the link
+        link, updated = self._save_link(cleaned_url, link_type, user, chat)
 
-        link_updated = self._save_link(link_info, user, chat)
-        self.responser.reply_save_link(link_info, link_updated)
+        if link_type == LinkType.ARTIST:
+            spotify_artist = self.spotify_client.client.artist(entity_id)
+            artist = self._save_artist(spotify_artist)
+            link.artist = artist
+        elif link_type == LinkType.ALBUM:
+            spotify_album = self.spotify_client.client.album(entity_id)
+            album = self._save_album(spotify_album)
+            link.album = album
+        elif link_type == LinkType.TRACK:
+            spotify_track = self.spotify_client.client.track(entity_id)
+            track = self._save_track(spotify_track)
+            link.track = track
+        link.save()
+
+        self.responser.reply_save_link(link, updated)
 
     # Operations
+    def _save_artist(self, spotify_artist):
+        logger.info(f"Saving the artist: {spotify_artist['name']}")
+        # Save or retrieve the artist
+        saved_artist, created = Artist.get_or_create(
+            id=spotify_artist['id'],
+            name=spotify_artist['name'],
+            image=spotify_artist['images'][0]['url'],
+            popularity=spotify_artist['popularity'],
+            href=spotify_artist['href'],
+            spotify_url=spotify_artist['external_urls']['spotify'],
+            uri=spotify_artist['uri'])
+
+        # Save or retrieve the genres
+        if created:
+            logger.info(f'Saving genres for artist {saved_artist.name}')
+            saved_genres = self._save_genres(spotify_artist['genres'])
+            saved_artist.genres = saved_genres
+            saved_artist.save()
+        return saved_artist
+
+    def _save_album(self, spotify_album):
+        logger.info(f"Saving the album: {spotify_album['name']}")
+        saved_album, created = Album.get_or_create(
+            id=spotify_album['id'],
+            name=spotify_album['name'],
+            label=spotify_album['label'],
+            image=spotify_album['images'][0]['url'],
+            popularity=spotify_album['popularity'],
+            href=spotify_album['href'],
+            spotify_url=spotify_album['external_urls']['spotify'],
+            album_type=spotify_album['type'],
+            uri=spotify_album['uri'])
+
+        if created:
+            saved_artists = []
+            logger.info(f"Saving artists for album: {spotify_album['name']}")
+            for album_artist in spotify_album['artists']:
+                artist_id = album_artist['id']
+                artist = self.spotify_client.client.artist(artist_id)
+                saved_artist = self._save_artist(artist)
+                saved_artists.append(saved_artist)
+                logger.info(f"Saved artist {saved_artist.name}")
+            # Set the artists to the album
+            saved_album.artists = saved_artist
+            saved_album.save()
+            # Save the genres
+            logger.info(f"Saving genres for album {saved_album.name} with id {saved_album.id}")
+            saved_genres = self._save_genres(spotify_album['genres'])
+            saved_album.genres = saved_genres
+            saved_album.save()
+        return saved_album
+
+    def _save_track(self, spotify_track):
+        logger.info(f"Saving the track: {spotify_track['name']}")
+        # Save the album
+        logger.info(f"Saving the album for track {spotify_track['name']} with id {spotify_track['id']}")
+        album_id = spotify_track['album']['id']
+        album = self.spotify_client.client.album(album_id)
+        saved_album = self._save_album(album)
+
+        # Save the track (with the album)
+        saved_track, created = Track.get_or_create(
+            id=spotify_track['id'],
+            name=spotify_track['name'],
+            track_number=spotify_track['track_number'],
+            duration_ms=spotify_track['duration_ms'],
+            explicit=spotify_track['explicit'],
+            popularity=spotify_track['popularity'],
+            href=spotify_track['href'],
+            spotify_url=spotify_track['external_urls']['spotify'],
+            preview_url=spotify_track['preview_url'],
+            uri=spotify_track['uri'],
+            album=saved_album)
+
+        if created:
+            saved_artists = []
+            logger.info(f"Saving artists for track {saved_track.name} with id {saved_track.id}")
+            for track_artist in spotify_track['artists']:
+                artist_id = track_artist['id']
+                artist = self.spotify_client.client.artist(artist_id)
+                saved_artist = self._save_artist(artist)
+                saved_artists.append(saved_artist)
+                logger.info(f"Saved artist {saved_artist.name}")
+            # Set the artists to the album
+            saved_track.artists = saved_artists
+            saved_track.save()
+        return saved_track
+
+    def _save_genres(self, genres):
+        saved_genres = []
+        for genre in genres:
+            saved_genre, created = Genre.get_or_create(name=genre)
+            saved_genres.append(saved_genre)
+            logger.info(f'Saved genre {saved_genre.name}')
+        return saved_genres
+
     def _save_user(self):
         # Create or get the user that sent the link
         user, user_created = User.get_or_create(
@@ -310,9 +420,9 @@ class MusicBucketBot:
 
         return chat
 
-    def _save_link(self, link_info, user, chat):
+    def _save_link(self, cleaned_url, link_type, user, chat):
         # Update the link if it exists for a chat, create if it doesn't exist
-        link = Link.get_or_none((Link.url == link_info.url) & (Link.chat == chat))
+        link = Link.get_or_none((Link.url == cleaned_url) & (Link.chat == chat))
         link_updated = False
         if link is not None:
             # If link already exists, set updated_at and last_update_user to current
@@ -320,29 +430,17 @@ class MusicBucketBot:
             link.save()
             link_updated = True
         else:
-
             link = Link.create(
-                url=link_info.url,
-                link_type=link_info.link_type.value,
+                url=cleaned_url,
+                link_type=link_type.value,
                 created_at=datetime.datetime.now(),
-                artist_name=link_info.artist,
-                album_name=link_info.album,
-                track_name=link_info.track,
-                genre=link_info.genres[0] if len(link_info.genres) > 0 else None,
                 user=user,
                 chat=chat)
 
         # Log link operation
         link_operation = 'Saved' if not link_updated else 'Updated'
 
-        if link_info.link_type == LinkType.ARTIST:
-            logger.info("'{}' link '{}' of type '{}' in chat '{}'".format(
-                link_operation, link.artist_name, link.link_type, link.chat.name))
-        elif link_info.link_type == LinkType.ALBUM:
-            logger.info("'{}' link '{}' of type '{}' in chat '{}'".format(
-                link_operation, link.album_name, link.link_type, link.chat.name))
-        elif link_info.link_type == LinkType.TRACK:
-            logger.info("'{}' link '{}' of type '{}' in chat '{}'".format(
-                link_operation, link.track_name, link.link_type, link.chat.name))
+        logger.info("'{}' link '{}' of type '{}' in chat '{}'".format(
+            link_operation, link.url, link.link_type, link.chat.name))
 
-        return link_updated
+        return link, link_updated

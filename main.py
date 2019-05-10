@@ -1,5 +1,5 @@
-import sys
-from app.db.db import db, User, Chat, Link
+from app.db import db
+from app.models import Link, Artist, Genre, User, Chat, Album, Track, AlbumArtist, AlbumGenre, ArtistGenre, TrackArtist
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, InlineQueryHandler
 from dotenv import load_dotenv
 from os import getenv as getenv
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 def _setup_database():
     db.connect()
-    db.create_tables([User, Chat, Link])
+    db.create_tables([User, Chat, Link, Artist, Album, Track, Genre, AlbumArtist, AlbumGenre, ArtistGenre, TrackArtist])
 
 
 def main():

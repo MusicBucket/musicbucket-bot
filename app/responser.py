@@ -27,22 +27,23 @@ class Responser:
                     msg += '    {} <a href="{}">{}</a> {}\n'.format(
                         emojize(':busts_in_silhouette:', use_aliases=True),
                         link.url,
-                        link.artist_name,
-                        '({})'.format(link.genre) if link.genre is not None else '')
+                        link.artist.name,
+                        '({})'.format(link.genres[0]) if len(link.genres) > 0 is not None else '')
                 elif link.link_type == LinkType.ALBUM.value:
                     msg += '    {} <a href="{}">{} - {}</a> {}\n'.format(
                         emojize(':cd:', use_aliases=True),
                         link.url,
-                        link.artist_name,
-                        link.album_name,
-                        '({})'.format(link.genre) if link.genre is not None else '')
+                        link.album.artists.first().name,
+                        link.album.name,
+                        '({})'.format(link.genres[0]) if len(link.genres) > 0 is not None else '')
                 elif link.link_type == LinkType.TRACK.value:
                     msg += '    {} <a href="{}">{} by {}</a> {}\n'.format(
                         emojize(':musical_note:', use_aliases=True),
                         link.url,
-                        link.track_name,
-                        link.artist_name,
-                        '({})'.format(link.genre) if link.genre is not None else '')
+                        link.track.name,
+                        link.track.artists.first().name,
+                        '({})'.format(link.genres[0]) if len(
+                            link.genres) > 0 is not None else '')
             msg += '\n'
         self._reply(msg)
 
@@ -61,8 +62,8 @@ class Responser:
                                 "%Y/%m/%d"),
                                 link.last_update_user.username or link.last_update_user.first_name or '') if link.last_update_user else ''),
                         link.url,
-                        link.artist_name,
-                        '({})'.format(link.genre) if link.genre is not None else '')
+                        link.artist.name,
+                        '({})'.format(link.genres[0]) if len(link.genres) > 0 is not None else '')
                 elif link.link_type == LinkType.ALBUM.value:
                     msg += '    {}  {} <a href="{}">{} - {}</a> {}\n'.format(
                         emojize(':cd:', use_aliases=True),
@@ -72,9 +73,9 @@ class Responser:
                                 "%Y/%m/%d"),
                                 link.last_update_user.username or link.last_update_user.first_name or '') if link.last_update_user else ''),
                         link.url,
-                        link.artist_name,
-                        link.album_name,
-                        '({})'.format(link.genre) if link.genre is not None else '')
+                        link.album.artists[0].name,
+                        link.album.name,
+                        '({})'.format(link.genres[0]) if len(link.genres) > 0 is not None else '')
                 elif link.link_type == LinkType.TRACK.value:
                     msg += '    {}  {} <a href="{}">{} by {}</a> {}\n'.format(
                         emojize(':musical_note:', use_aliases=True),
@@ -84,9 +85,10 @@ class Responser:
                                 "%Y/%m/%d"),
                                 link.last_update_user.username or link.last_update_user.first_name or '') if link.last_update_user else ''),
                         link.url,
-                        link.track_name,
-                        link.artist_name,
-                        '({})'.format(link.genre) if link.genre is not None else '')
+                        link.track.name,
+                        link.track.artists[0].name,
+                        '({})'.format(link.genres[0]) if len(
+                            link.genres) > 0 is not None else '')
             msg += '\n'
         self._reply(msg)
 
@@ -117,24 +119,24 @@ class Responser:
                                                            user.links)
         self._reply(msg)
 
-    def reply_save_link(self, link_info, updated):
+    def reply_save_link(self, link, updated):
         msg = '<strong>{}: </strong>'.format(
             'Saved' if not updated else 'Updated')
-        genres = ', '.join(link_info.genres)
+        genre_names = [g.name for g in link.genres]
+        genres = ', '.join(genre_names)
 
-        if link_info.link_type == LinkType.ARTIST:
-
+        if link.link_type == LinkType.ARTIST.value:
             msg += '{} <strong>{}</strong>\n'.format(emojize(':busts_in_silhouette:', use_aliases=True),
-                                                     link_info.artist)
-        elif link_info.link_type == LinkType.ALBUM:
+                                                     link.artist.name)
+        elif link.link_type == LinkType.ALBUM.value:
             msg += '{} <strong>{}</strong> - <strong>{}</strong>\n'.format(emojize(':cd:', use_aliases=True),
-                                                                           link_info.artist,
-                                                                           link_info.album)
-        elif link_info.link_type == LinkType.TRACK:
+                                                                           link.album.artists.first().name,
+                                                                           link.album.name)
+        elif link.link_type == LinkType.TRACK.value:
             msg += '{} {} by <strong>{}</strong>\n'.format(emojize(':musical_note:', use_aliases=True),
-                                                           link_info.track,
-                                                           link_info.artist)
-        msg += '<strong>Genres:</strong> {}'.format(genres)
+                                                           link.track.name,
+                                                           link.track.artists.first().name)
+        msg += '<strong>Genres:</strong> {}'.format(genres if len(genres) > 0 else 'N/A')
         self._reply(msg)
 
     def show_search_results(self, results):
