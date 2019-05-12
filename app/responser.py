@@ -92,15 +92,15 @@ class Responser:
             msg += '\n'
         self._reply(msg)
 
-    def reply_recommendations(self, track_recommendations, seed_links):
-        if len(track_recommendations) == 0:
+    def reply_recommendations(self, track_recommendations, artist_seeds):
+        if len(track_recommendations['tracks']) == 0:
             msg = 'There are not recommendations for this week yet. Send some music!'
             self._reply(msg)
             return
 
-        artists_names = [link.artist_name for link in seed_links]
-        msg = 'Track recommendations of the week, based on: <strong>{}</strong>\n'.format(
-            '</strong>, <strong>\n'.join(artists_names))
+        artists_names = [artist.name for artist in artist_seeds]
+        msg = 'Track recommendations of the week, based on the artists: <strong>{}</strong>\n'.format(
+            '</strong>, <strong>'.join(artists_names))
 
         for track in track_recommendations['tracks']:
             msg += '{} <a href="{}">{}</a> by <strong>{}</strong>\n'.format(

@@ -174,25 +174,23 @@ class MusicBucketBot:
         days = 7
         now = datetime.datetime.now()
         last_week_timedelta = datetime.timedelta(days=days)
-        SpotifyClient.MAX_RECOMMENDATIONS_ARTISTS_SEEDS
-        artists_ids = []
 
-        seed_links = Link.select() \
+        album_seeds = Album.select() \
+            .join(Link) \
             .join(Chat) \
             .where(Chat.id == self.update.message.chat_id) \
-            .where((Link.created_at >= now - last_week_timedelta) | (Link.updated_at >= now - last_week_timedelta)) \
-            .where(Link.link_type == LinkType.ARTIST.value) \
+            .where((Link.created_at >= (now - last_week_timedelta)) | (Link.updated_at >= (now - last_week_timedelta))) \
+            .where(Link.link_type == LinkType.ALBUM.value) \
             .order_by(Link.updated_at.asc(), Link.created_at.asc())
 
-        if len(seed_links) == 0:
+        if len(album_seeds) == 0:
             track_recommendations = []
         else:
-            if len(seed_links) > SpotifyClient.MAX_RECOMMENDATIONS_ARTISTS_SEEDS:
-                seed_links = random.sample(list(seed_links), k=SpotifyClient.MAX_RECOMMENDATIONS_ARTISTS_SEEDS)
-
-            artists_ids = [self.spotify_client.get_entity_id_from_url(link.url) for link in seed_links]
-            track_recommendations = self.spotify_client.get_recommendations(artists_ids)
-        self.responser.reply_recommendations(track_recommendations, seed_links)
+            if len(album_seeds) > SpotifyClient.MAX_RECOMMENDATIONS_SEEDS:
+                album_seeds = random.sample(list(album_seeds), k=SpotifyClient.MAX_RECOMMENDATIONS_SEEDS)
+            artist_seeds = [album.artists.first() for album in album_seeds]
+            track_recommendations = self.spotify_client.get_recommendations(artist_seeds)
+        self.responser.reply_recommendations(track_recommendations, artist_seeds)
 
         logger.info(f"'/recommendations' command was called by user {self.update.message.from_user.id} "
                     f"in the chat {self.update.message.chat_id}")

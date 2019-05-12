@@ -13,7 +13,7 @@ load_dotenv()
 class SpotifyClient:
     """Spotify client that helps to manage and get info from a Spotify link"""
     RECOMMENDATIONS_NUMBER = 10
-    MAX_RECOMMENDATIONS_ARTISTS_SEEDS = 5
+    MAX_RECOMMENDATIONS_SEEDS = 5
 
     def __init__(self):
         client_credentials_manager = SpotifyClientCredentials(client_id=getenv(
@@ -90,7 +90,8 @@ class SpotifyClient:
 
     def get_recommendations(self, seed_artists):
         """Get track recommendations based on a list of max. 5 artist seeds"""
-        tracks = self.client.recommendations(seed_artists, limit=self.RECOMMENDATIONS_NUMBER)
+        artists_ids = [artist.id for artist in seed_artists]
+        tracks = self.client.recommendations(seed_artists=artists_ids, limit=self.RECOMMENDATIONS_NUMBER)
         return tracks
 
     def get_entity_id_from_url(self, url):
