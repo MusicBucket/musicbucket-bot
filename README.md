@@ -13,6 +13,7 @@ with the related info:
 ### Commands
 - ```/music``` Retrieves the music shared in the chat from the last week. Grouped by user.
 - ```/music_from_beginning @username``` Retrieves the music shared in the chat from the beginning of time by an user.
+- ```/recommendations``` Returns a list of 10 recommended tracks based on the sent albums from the last week.
 - ```/stats``` Retrieves an user list with a links counter for the current chat.
 - ```@music_bucket_bot [artist/album/track] [name]``` Search for an artist, an album or a track and add it to the list.
 
