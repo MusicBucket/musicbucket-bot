@@ -9,6 +9,8 @@ db_old.sqlite
 migration.py
 Pipfile.lock
 
+*.log
+
 app/__pycache__
 db/__pycache__
 music/__pycache__
