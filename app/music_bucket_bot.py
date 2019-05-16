@@ -311,12 +311,13 @@ class MusicBucketBot:
         # Save or retrieve the artist
         saved_artist, created = Artist.get_or_create(
             id=spotify_artist['id'],
-            name=spotify_artist['name'],
-            image=spotify_artist['images'][0]['url'],
-            popularity=spotify_artist['popularity'],
-            href=spotify_artist['href'],
-            spotify_url=spotify_artist['external_urls']['spotify'],
-            uri=spotify_artist['uri'])
+            defaults={
+                'name': spotify_artist['name'],
+                'image': spotify_artist['images'][0]['url'],
+                'popularity': spotify_artist['popularity'],
+                'href': spotify_artist['href'],
+                'spotify_url': spotify_artist['external_urls']['spotify'],
+                'uri': spotify_artist['uri']})
 
         # Save or retrieve the genres
         if created:
@@ -330,14 +331,14 @@ class MusicBucketBot:
         logger.info(f"Saving the album: {spotify_album['name']}")
         saved_album, created = Album.get_or_create(
             id=spotify_album['id'],
-            name=spotify_album['name'],
-            label=spotify_album['label'],
-            image=spotify_album['images'][0]['url'],
-            popularity=spotify_album['popularity'],
-            href=spotify_album['href'],
-            spotify_url=spotify_album['external_urls']['spotify'],
-            album_type=spotify_album['type'],
-            uri=spotify_album['uri'])
+            defaults={
+                'name': spotify_album['name'],
+                'label': spotify_album['label'],
+                'image': spotify_album['images'][0]['url'],
+                'popularity': spotify_album['popularity'],
+                'href': spotify_album['href'],
+                'spotify_url': spotify_album['external_urls']['spotify'],
+                'uri': spotify_album['uri']})
 
         if created:
             saved_artists = []
@@ -369,16 +370,17 @@ class MusicBucketBot:
         # Save the track (with the album)
         saved_track, created = Track.get_or_create(
             id=spotify_track['id'],
-            name=spotify_track['name'],
-            track_number=spotify_track['track_number'],
-            duration_ms=spotify_track['duration_ms'],
-            explicit=spotify_track['explicit'],
-            popularity=spotify_track['popularity'],
-            href=spotify_track['href'],
-            spotify_url=spotify_track['external_urls']['spotify'],
-            preview_url=spotify_track['preview_url'],
-            uri=spotify_track['uri'],
-            album=saved_album)
+            defaults={
+                'name': spotify_track['name'],
+                'track_number ': spotify_track['track_number'],
+                'duration_ms ': spotify_track['duration_ms'],
+                'explicit': spotify_track['explicit'],
+                'popularity ': spotify_track['popularity'],
+                'href': spotify_track['href'],
+                'spotify_url': spotify_track['external_urls']['spotify'],
+                'preview_url ': spotify_track['preview_url'],
+                'uri': spotify_track['uri'],
+                'album': saved_album})
 
         if created:
             saved_artists = []
@@ -406,8 +408,10 @@ class MusicBucketBot:
         # Create or get the user that sent the link
         user, user_created = User.get_or_create(
             id=self.update.message.from_user.id,
-            username=self.update.message.from_user.username,
-            first_name=self.update.message.from_user.first_name)
+            defaults={
+                'username': self.update.message.from_user.username,
+                'first_name': self.update.message.from_user.first_name})
+
         if user_created:
             logger.info("User '{}' with id '{}' was created".format(
                 user.username if user.username else user.first_name,
@@ -418,7 +422,9 @@ class MusicBucketBot:
         # Create or get the chat where the link was sent
         chat, chat_created = Chat.get_or_create(
             id=self.update.message.chat_id,
-            name=self.update.message.chat.title or self.update.message.chat.username or self.update.message.chat.first_name)
+            defaults={
+                'name': self.update.message.chat.title or self.update.message.chat.username or self.update.message.chat.first_name
+            })
         if chat_created:
             logger.info(f"Chat '{chat.name}' with id '{chat.id}' was created")
 
