@@ -30,8 +30,7 @@ class MusicBucketBotFactory:
 
     @staticmethod
     def handle_save_link(bot, update):
-        command = Commands.SAVE_LINK
-        MusicBucketBotFactory._handle(bot, update, command)
+        MusicBucketBotFactory._handle(bot, update, command=None)
 
     @staticmethod
     def handle_music_command(bot, update):
@@ -54,7 +53,7 @@ class MusicBucketBotFactory:
         MusicBucketBotFactory._handle(bot, update, command)
 
     @staticmethod
-    def handle_search_command(bot, update):
+    def handle_search(bot, update):
         command = Commands.SEARCH
         MusicBucketBotFactory._handle(bot, update, command)
 
@@ -66,7 +65,13 @@ class MusicBucketBotFactory:
                   'command_args': command_args,
                   'command': command}
         music_bucket_bot = MusicBucketBot(*args, **kwargs)
-        music_bucket_bot.execute_command()
+
+        if command not in Commands:
+            music_bucket_bot.process_message()
+        elif command == Commands.SEARCH:
+            music_bucket_bot.execute_search()
+        else:
+            music_bucket_bot.execute_command()
 
 
 class MusicBucketBot:
@@ -91,26 +96,20 @@ class MusicBucketBot:
         self.link_processor = self.LinkProcessor()
         self.responser = Responser(self.bot, self.update)
 
-        self.user = None
-        self.chat = None
+    def execute_search(self):
+        self._search()
 
     def execute_command(self):
-        if self.command == Commands.SEARCH:
-            self._search()
+        if self.command == Commands.MUSIC:
+            self._music()
+        elif self.command == Commands.MUSIC_FROM_BEGINNING:
+            self._music_from_beginning()
+        elif self.command == Commands.RECOMMENDATIONS:
+            self._recommendations()
+        elif self.command == Commands.STATS:
+            self._stats()
         else:
-            self.user = self._save_user()
-            self.chat = self._save_chat()
-
-            if self.command == Commands.MUSIC:
-                self._music()
-            elif self.command == Commands.MUSIC_FROM_BEGINNING:
-                self._music_from_beginning()
-            elif self.command == Commands.RECOMMENDATIONS:
-                self._recommendations()
-            elif self.command == Commands.STATS:
-                self._stats()
-            else:
-                self._process_message()
+            self._process_message()
 
     # Commands logic
     def _music(self):
@@ -284,9 +283,11 @@ class MusicBucketBot:
     def _process_url(self, url, link_type):
         cleaned_url = self.spotify_client.clean_url(url)
         entity_id = self.spotify_client.get_entity_id_from_url(cleaned_url)
+        user = self._save_user()
+        chat = self._save_chat()
 
         # Create or update the link
-        link, updated = self._save_link(cleaned_url, link_type, self.user, self.chat)
+        link, updated = self._save_link(cleaned_url, link_type, user, chat)
 
         if link_type == LinkType.ARTIST:
             spotify_artist = self.spotify_client.client.artist(entity_id)

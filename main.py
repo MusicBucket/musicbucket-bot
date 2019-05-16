@@ -11,6 +11,7 @@ from app.music_bucket_bot import MusicBucketBotFactory
 load_dotenv()
 
 logging.basicConfig(
+    filename='music-bucket-bot.log',
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -41,7 +42,7 @@ def main():
     dispatcher.add_handler(CommandHandler('recommendations', music_bucket_bot_factory.handle_recommendations))
     dispatcher.add_handler(CommandHandler('stats',
                                           music_bucket_bot_factory.handle_stats_command))
-    dispatcher.add_handler(InlineQueryHandler(music_bucket_bot_factory.handle_search_command))
+    dispatcher.add_handler(InlineQueryHandler(music_bucket_bot_factory.handle_search))
 
     # Non command handlers
     dispatcher.add_handler(MessageHandler(
