@@ -91,22 +91,26 @@ class MusicBucketBot:
         self.link_processor = self.LinkProcessor()
         self.responser = Responser(self.bot, self.update)
 
-        self.user = self._save_user()
-        self.chat = self._save_chat()
+        self.user = None
+        self.chat = None
 
     def execute_command(self):
-        if self.command == Commands.MUSIC:
-            self._music()
-        elif self.command == Commands.MUSIC_FROM_BEGINNING:
-            self._music_from_beginning()
-        elif self.command == Commands.RECOMMENDATIONS:
-            self._recommendations()
-        elif self.command == Commands.STATS:
-            self._stats()
-        elif self.command == Commands.SEARCH:
+        if self.command == Commands.SEARCH:
             self._search()
         else:
-            self._process_message()
+            self.user = self._save_user()
+            self.chat = self._save_chat()
+
+            if self.command == Commands.MUSIC:
+                self._music()
+            elif self.command == Commands.MUSIC_FROM_BEGINNING:
+                self._music_from_beginning()
+            elif self.command == Commands.RECOMMENDATIONS:
+                self._recommendations()
+            elif self.command == Commands.STATS:
+                self._stats()
+            else:
+                self._process_message()
 
     # Commands logic
     def _music(self):
