@@ -109,7 +109,7 @@ class MusicBucketBot:
         elif self.command == Commands.STATS:
             self._stats()
         else:
-            self._process_message()
+            self.process_message()
 
     # Commands logic
     def _music(self):
@@ -266,7 +266,7 @@ class MusicBucketBot:
 
         self.responser.show_search_results(results)
 
-    def _process_message(self):
+    def process_message(self):
         """
         Finds the streaming url, identifies the streaming service in the text and
         saves it to the database.
