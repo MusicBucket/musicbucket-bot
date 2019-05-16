@@ -93,7 +93,7 @@ class Responser:
         self._reply(msg)
 
     def reply_recommendations(self, track_recommendations, artist_seeds):
-        if len(track_recommendations['tracks']) == 0:
+        if len(track_recommendations['tracks']) == 0 or len(artist_seeds) == 0:
             msg = 'There are not recommendations for this week yet. Send some music!'
             self._reply(msg)
             return
