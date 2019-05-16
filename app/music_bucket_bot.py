@@ -66,7 +66,7 @@ class MusicBucketBotFactory:
                   'command_args': command_args,
                   'command': command}
         music_bucket_bot = MusicBucketBot(*args, **kwargs)
-        music_bucket_bot.execute()
+        music_bucket_bot.execute_command()
 
 
 class MusicBucketBot:
@@ -91,7 +91,10 @@ class MusicBucketBot:
         self.link_processor = self.LinkProcessor()
         self.responser = Responser(self.bot, self.update)
 
-    def execute(self):
+        self.user = self._save_user()
+        self.chat = self._save_chat()
+
+    def execute_command(self):
         if self.command == Commands.MUSIC:
             self._music()
         elif self.command == Commands.MUSIC_FROM_BEGINNING:
@@ -277,11 +280,9 @@ class MusicBucketBot:
     def _process_url(self, url, link_type):
         cleaned_url = self.spotify_client.clean_url(url)
         entity_id = self.spotify_client.get_entity_id_from_url(cleaned_url)
-        user = self._save_user()
-        chat = self._save_chat()
 
         # Create or update the link
-        link, updated = self._save_link(cleaned_url, link_type, user, chat)
+        link, updated = self._save_link(cleaned_url, link_type, self.user, self.chat)
 
         if link_type == LinkType.ARTIST:
             spotify_artist = self.spotify_client.client.artist(entity_id)
