@@ -131,7 +131,10 @@ class Responser:
         if artist:
             msg += f"{artist_emoji} {artist}\n"
 
-        self._reply_image(cover, msg)
+        if cover:
+            self._reply_image(cover, msg)
+        else:
+            self._reply(msg)
 
     def reply_lastfmset(self, username):
         msg = f"<b>{username}</b>'s Last.fm username set correctly"

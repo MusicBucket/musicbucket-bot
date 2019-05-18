@@ -28,11 +28,16 @@ class LastFMClient:
 
         album = track.get_album()
 
+        try:
+            cover = track.get_cover_image()
+        except IndexError:
+            cover = None
+
         data = {
             'artist': track.artist,
             'album': album,
             'track': track,
-            'cover': track.get_cover_image()
+            'cover': cover
         }
         return data
 
