@@ -29,10 +29,10 @@ class LastFMClient:
         album = track.get_album()
 
         data = {
-            'artist_name': track.artist,
-            'album_name': album.title,
-            'track_name': track.title,
-            'cover': album.get_cover_image()
+            'artist': track.artist,
+            'album': album,
+            'track': track,
+            'cover': track.get_cover_image()
         }
         return data
 

@@ -119,15 +119,17 @@ class Responser:
         artist_emoji = emojize(':busts_in_silhouette:', use_aliases=True)
         album_emoji = emojize(':cd:', use_aliases=True)
         track_emoji = emojize(':musical_note:', use_aliases=True)
-        artist = now_playing['artist_name']
-        album = now_playing['album_name']
-        track = now_playing['track_name']
+        artist = now_playing['artist']
+        album = now_playing['album']
+        track = now_playing['track']
         cover = now_playing['cover']
 
         msg = f"<b>{username}</b>'s now playing:\n"
-        msg += f"{track_emoji} {track or ''}\n"
-        msg += f"{album_emoji} {album or ''}\n"
-        msg += f"{artist_emoji} {artist or ''}\n"
+        msg += f"{track_emoji} {track.title}\n"
+        if album:
+            msg += f"{album_emoji} {album.title}\n"
+        if artist:
+            msg += f"{artist_emoji} {artist}\n"
 
         self._reply_image(cover, msg)
 
