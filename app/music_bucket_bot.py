@@ -230,7 +230,8 @@ class MusicBucketBot:
         if not lastfm_username:
             username = from_user.username or from_user.name
             logger.warning(f"Last.fm user not found in the database. Using the Telegram's default {username}")
-        username = lastfm_username.username
+        else:
+            username = lastfm_username.username
         now_playing = self.lastfm_client.now_playing(username)
 
         self.responser.reply_now_playing(now_playing, username)
