@@ -15,6 +15,7 @@ emoji = "*"
 spotipy = "*"
 peewee = "*"
 ipdb = "*"
+pylast = "*"
 
 [requires]
 python_version = "3.7"

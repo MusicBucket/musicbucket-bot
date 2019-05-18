@@ -8,7 +8,8 @@ from enum import Enum
 from peewee import fn, SQL
 from telegram import InlineQueryResultArticle, InputTextMessageContent
 
-from app.models import User, Chat, Link, Track, Artist, Album, Genre
+from app.models import User, Chat, Link, Track, Artist, Album, Genre, LastFMUsername
+from app.music.lastfm import LastFMClient
 from app.music.music import LinkType, EntityType
 from app.music.spotify import SpotifyClient
 from app.responser import Responser
@@ -21,6 +22,8 @@ class Commands(Enum):
     MUSIC = 'music'
     MUSIC_FROM_BEGINNING = 'music_from_beginning'
     RECOMMENDATIONS = 'recommendations'
+    NOW_PLAYING = 'np'
+    LASTFM_SET = 'lastfm_set'
     STATS = 'stats'
     SEARCH = 'search'
 
@@ -43,9 +46,19 @@ class MusicBucketBotFactory:
         MusicBucketBotFactory._handle(bot, update, command, args)
 
     @staticmethod
-    def handle_recommendations(bot, update):
+    def handle_recommendations_command(bot, update):
         command = Commands.RECOMMENDATIONS
         MusicBucketBotFactory._handle(bot, update, command)
+
+    @staticmethod
+    def handle_now_playing_command(bot, update):
+        command = Commands.NOW_PLAYING
+        MusicBucketBotFactory._handle(bot, update, command)
+
+    @staticmethod
+    def handle_lastfm_set_command(bot, update, args):
+        command = Commands.LASTFM_SET
+        MusicBucketBotFactory._handle(bot, update, command, args)
 
     @staticmethod
     def handle_stats_command(bot, update):
@@ -93,6 +106,7 @@ class MusicBucketBot:
         self.update = kwargs.get('update')
 
         self.spotify_client = SpotifyClient()
+        self.lastfm_client = LastFMClient()
         self.link_processor = self.LinkProcessor()
         self.responser = Responser(self.bot, self.update)
 
@@ -106,6 +120,10 @@ class MusicBucketBot:
             self._music_from_beginning()
         elif self.command == Commands.RECOMMENDATIONS:
             self._recommendations()
+        elif self.command == Commands.NOW_PLAYING:
+            self._now_playing()
+        elif self.command == Commands.LASTFM_SET:
+            self._lastfm_set_username()
         elif self.command == Commands.STATS:
             self._stats()
         else:
@@ -201,10 +219,58 @@ class MusicBucketBot:
         logger.info(f"'/recommendations' command was called by user {self.update.message.from_user.id} "
                     f"in the chat {self.update.message.chat_id}")
 
+    def _now_playing(self):
+        """
+        Command /np
+        Shows which track is the user currently playing
+        TODO: By getting MBID from the returned track, call MB API and get Spotify Link to save it in the database as a sent recommendation
+        """
+        from_user = self.update.message.from_user
+        lastfm_username = LastFMUsername.get_or_none(from_user.id)
+        if not lastfm_username:
+            username = from_user.username or from_user.name
+            logger.warning(f"Last.fm user not found in the database. Using the Telegram's default {username}")
+        username = lastfm_username.username
+        now_playing = self.lastfm_client.now_playing(username)
+
+        self.responser.reply_now_playing(now_playing, username)
+
+        logger.info(
+            f"'/np' command was called by user {self.update.message.from_user.id} "
+            f"in the chat {self.update.message.chat_id}")
+
+    def _lastfm_set_username(self):
+        """
+        Command /lastfm_set
+        Sets the given Last.fm username to the current user
+        """
+        try:
+            username = self.command_args[0]
+            username = username.replace('@', '')
+        except IndexError:
+            self.responser.error_music_from_beginning_no_username()
+            return
+
+        lastfm_username, created = LastFMUsername.get_or_create(
+            user=self.update.message.from_user.id,
+            defaults={
+                'username': username
+            }
+        )
+        if not created:
+            lastfm_username.username = username
+            lastfm_username.save()
+
+        self.responser.reply_lastfm_set(username)
+
+        logger.info(
+            f"'/lastfm_set' command was called by user {self.update.message.from_user.id} "
+            f"in the chat {self.update.message.chat_id}")
+
     def _stats(self):
         """
         Command /stats
-        Returns the number of links sent in a chat by every user
+        Shows the links sent count for every user in the current chat
         """
         users = User.select(User, fn.Count(Link.url).alias('links')) \
             .join(Link, on=Link.user) \

@@ -133,3 +133,8 @@ class Link(BaseModel):
 
     def __str__(self):
         return 'Link: {}'.format(self.url)
+
+
+class LastFMUsername(BaseModel):
+    user = ForeignKeyField(User, backref='lastfm_username', primary_key=True)
+    username = CharField(unique=True)

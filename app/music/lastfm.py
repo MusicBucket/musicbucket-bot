@@ -1,0 +1,40 @@
+import logging
+from os import getenv
+
+import pylast
+from dotenv import load_dotenv
+
+load_dotenv()
+
+logger = logging.getLogger(__name__)
+
+API_KEY = getenv('LAST_FM_API_KEY')
+API_SECRET = getenv('LAST_FM_SHARED_SECRET')
+
+
+class LastFMClient:
+    """Last.fm client"""
+
+    def __init__(self):
+        self.network = pylast.LastFMNetwork(api_key=API_KEY, api_secret=API_SECRET)
+
+    def now_playing(self, username):
+        try:
+            track = self.network.get_user(username).get_now_playing()
+            if not track:
+                return
+        except pylast.WSError:
+            return
+
+        album = track.get_album()
+
+        data = {
+            'artist_name': track.artist,
+            'album_name': album.title,
+            'track_name': track.title,
+            'cover': album.get_cover_image()
+        }
+        return data
+
+    def set_lastfm_username_to_user(self, user, lastfm_username):
+        pass

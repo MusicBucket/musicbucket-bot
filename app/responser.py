@@ -110,6 +110,31 @@ class Responser:
                 track['artists'][0]['name'])
         self._reply(msg)
 
+    def reply_now_playing(self, now_playing, username):
+        if not now_playing:
+            msg = f'<b>{username}</b> is not currently playing music'
+            self._reply(msg)
+            return
+
+        artist_emoji = emojize(':busts_in_silhouette:', use_aliases=True)
+        album_emoji = emojize(':cd:', use_aliases=True)
+        track_emoji = emojize(':musical_note:', use_aliases=True)
+        artist = now_playing['artist_name']
+        album = now_playing['album_name']
+        track = now_playing['track_name']
+        cover = now_playing['cover']
+
+        msg = f"<b>{username}</b>'s now playing:\n"
+        msg += f"{track_emoji} {track or ''}\n"
+        msg += f"{album_emoji} {album or ''}\n"
+        msg += f"{artist_emoji} {artist or ''}\n"
+
+        self._reply_image(cover, msg)
+
+    def reply_lastfm_set(self, username):
+        msg = f"<b>{username}</b>'s Last.fm username set correctly"
+        self._reply(msg)
+
     def reply_stats(self, users):
         msg = '<strong>Links sent by the users from the beginning in this chat:</strong> \n'
 
@@ -146,6 +171,10 @@ class Responser:
         msg = 'Command usage /music_from_beginning @username'
         self._reply(msg)
 
+    def error_lastfm_set_username_no_username(self):
+        msg = 'Command usage /lastfm_set username'
+        self._reply(msg)
+
     def error_no_links_found(self, username):
         if username:
             msg = f'No links were found for this username {username}'
@@ -180,3 +209,7 @@ class Responser:
                                            parse_mode=ParseMode.HTML)
             time.sleep(1)
         return
+
+    def _reply_image(self, image, caption):
+        chat_id = self.update.message.chat_id
+        self.bot.send_photo(chat_id, image, caption, disable_web_page_preview=True, parse_mode=ParseMode.HTML)

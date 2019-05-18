@@ -7,6 +7,8 @@ with the related info:
 - *Track*
 - *Genres*
 
+It also integrates with Last.fm to retrieve information about your user like Now Playing.
+
 ### Currently supported music streaming services:
 - [x] Spotify
 
@@ -14,8 +16,10 @@ with the related info:
 - ```/music``` Retrieves the music shared in the chat from the last week. Grouped by user.
 - ```/music_from_beginning @username``` Retrieves the music shared in the chat from the beginning of time by an user.
 - ```/recommendations``` Returns a list of 10 recommended tracks based on the sent albums from the last week.
+- ```/np``` Now Playing. Returns track information about what you are currently playing in Last.fm.
+- ```/lastfm_set username``` Sets a Last.fm username to your Telegram user.
 - ```/stats``` Retrieves an user list with a links counter for the current chat.
-- ```@music_bucket_bot [artist/album/track] [name]``` Search for an artist, an album or a track and add it to the list.
+- ```@music_bucket_bot artist|album|track name``` Search for an artist, an album or a track and add it to the list.
 
 
 **Official bot** => ```@music_bucket_bot```

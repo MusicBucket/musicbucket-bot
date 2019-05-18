@@ -1,3 +1,4 @@
+import logging
 from os import getenv as getenv
 
 import spotipy
@@ -9,6 +10,11 @@ from app.music.music import LinkType, LinkInfo, EntityType
 # Spotify client init
 load_dotenv()
 
+logger = logging.getLogger(__name__)
+
+CLIENT_ID = getenv('SPOTIFY_CLIENT_ID')
+CLIENT_SECRET = getenv('SPOTIFY_CLIENT_SECRET')
+
 
 class SpotifyClient:
     """Spotify client that helps to manage and get info from a Spotify link"""
@@ -16,12 +22,12 @@ class SpotifyClient:
     MAX_RECOMMENDATIONS_SEEDS = 5
 
     def __init__(self):
-        client_credentials_manager = SpotifyClientCredentials(client_id=getenv(
-            'SPOTIFY_CLIENT_ID'), client_secret=getenv('SPOTIFY_CLIENT_SECRET'))
+        client_credentials_manager = SpotifyClientCredentials(client_id=CLIENT_ID, client_secret=CLIENT_SECRET)
         self.client = spotipy.Spotify(
             client_credentials_manager=client_credentials_manager)
 
-    def get_link_type(self, url):
+    @staticmethod
+    def get_link_type(url):
         """Resolves the Spotify link type"""
         if 'artist' in url:
             return LinkType.ARTIST
@@ -30,6 +36,22 @@ class SpotifyClient:
         elif 'track' in url:
             return LinkType.TRACK
         return None
+
+    @staticmethod
+    def get_entity_id_from_url(url):
+        return url[url.rfind('/') + 1:]
+
+    @staticmethod
+    def clean_url(url):
+        """Receives a Spotify url and returns it cleaned"""
+        if url.rfind('?') > -1:
+            return url[:url.rfind('?')]
+        return url
+
+    @staticmethod
+    def is_valid_url(url):
+        """Check if a message contains a Spotify Link"""
+        return 'open.spotify.com' in url
 
     def search_link(self, query, entity_type):
         """
@@ -93,16 +115,3 @@ class SpotifyClient:
         artists_ids = [artist.id for artist in seed_artists]
         tracks = self.client.recommendations(seed_artists=artists_ids, limit=self.RECOMMENDATIONS_NUMBER)
         return tracks
-
-    def get_entity_id_from_url(self, url):
-        return url[url.rfind('/') + 1:]
-
-    def clean_url(self, url):
-        """Receives a Spotify url and returns it cleaned"""
-        if url.rfind('?') > -1:
-            return url[:url.rfind('?')]
-        return url
-
-    def is_valid_url(self, url):
-        """Check if a message contains a Spotify Link"""
-        return 'open.spotify.com' in url
