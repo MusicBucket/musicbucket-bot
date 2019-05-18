@@ -7,7 +7,6 @@ env/
 db.sqlite
 db_old.sqlite
 migration.py
-Pipfile.lock
 
 *.log
 

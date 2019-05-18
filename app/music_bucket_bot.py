@@ -11,6 +11,7 @@ from telegram import InlineQueryResultArticle, InputTextMessageContent
 from app.models import User, Chat, Link, Track, Artist, Album, Genre, LastFMUsername
 from app.music.lastfm import LastFMClient
 from app.music.music import LinkType, EntityType
+from app.music.musicbrainz import MusicBrainzClient
 from app.music.spotify import SpotifyClient
 from app.responser import Responser
 
@@ -107,6 +108,7 @@ class MusicBucketBot:
 
         self.spotify_client = SpotifyClient()
         self.lastfm_client = LastFMClient()
+        self.musicbrainz_client = MusicBrainzClient()
         self.link_processor = self.LinkProcessor()
         self.responser = Responser(self.bot, self.update)
 
@@ -223,7 +225,7 @@ class MusicBucketBot:
         """
         Command /np
         Shows which track is the user currently playing
-        TODO: By getting MBID from the returned track, call MB API and get Spotify Link to save it in the database as a sent recommendation
+        TODO: By getting MBID from the returned track artist, call MB API and get Spotify Link to save it in the database as a sent recommendation
         """
         from_user = self.update.message.from_user
         lastfm_username = LastFMUsername.get_or_none(from_user.id)

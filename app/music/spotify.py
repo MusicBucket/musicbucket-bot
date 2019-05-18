@@ -17,7 +17,6 @@ CLIENT_SECRET = getenv('SPOTIFY_CLIENT_SECRET')
 
 
 class SpotifyClient:
-    """Spotify client that helps to manage and get info from a Spotify link"""
     RECOMMENDATIONS_NUMBER = 10
     MAX_RECOMMENDATIONS_SEEDS = 5
 

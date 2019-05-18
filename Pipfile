@@ -16,6 +16,7 @@ spotipy = "*"
 peewee = "*"
 ipdb = "*"
 pylast = "*"
+musicbrainzngs = "*"
 
 [requires]
 python_version = "3.7"

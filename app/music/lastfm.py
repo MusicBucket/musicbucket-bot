@@ -13,7 +13,6 @@ API_SECRET = getenv('LAST_FM_SHARED_SECRET')
 
 
 class LastFMClient:
-    """Last.fm client"""
 
     def __init__(self):
         self.network = pylast.LastFMNetwork(api_key=API_KEY, api_secret=API_SECRET)
