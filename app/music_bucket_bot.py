@@ -248,7 +248,7 @@ class MusicBucketBot:
             username = self.command_args[0]
             username = username.replace('@', '')
         except IndexError:
-            self.responser.error_music_from_beginning_no_username()
+            self.responser.error_lastfm_set_username_no_username()
             return
 
         lastfm_username, created = LastFMUsername.get_or_create(
