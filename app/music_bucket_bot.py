@@ -361,10 +361,12 @@ class MusicBucketBot:
         if link_type == LinkType.ARTIST:
             spotify_artist = self.spotify_client.client.artist(entity_id)
             artist = self._save_artist(spotify_artist)
+            spotify_track = self.spotify_client.get_artist_top_track(artist)
             link.artist = artist
         elif link_type == LinkType.ALBUM:
             spotify_album = self.spotify_client.client.album(entity_id)
             album = self._save_album(spotify_album)
+            spotify_track = self.spotify_client.get_album_first_track(album)
             link.album = album
         elif link_type == LinkType.TRACK:
             spotify_track = self.spotify_client.client.track(entity_id)
@@ -372,7 +374,7 @@ class MusicBucketBot:
             link.track = track
         link.save()
 
-        self.responser.reply_save_link(link, updated)
+        self.responser.reply_save_link(link, spotify_track, updated)
 
     # Operations
     def _save_artist(self, spotify_artist):

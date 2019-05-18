@@ -1,6 +1,5 @@
 import logging
 import time
-from enum import Enum
 
 from telegram import ParseMode
 
@@ -149,7 +148,7 @@ class Responser:
                                                            user.links)
         self._reply(msg)
 
-    def reply_save_link(self, link, updated):
+    def reply_save_link(self, link, spotify_track, updated):
         msg = '<strong>{}: </strong>'.format(
             'Saved' if not updated else 'Updated')
         genre_names = [g.name for g in link.genres]
@@ -167,7 +166,14 @@ class Responser:
                                                            link.track.name,
                                                            link.track.artists.first().name)
         msg += '<strong>Genres:</strong> {}'.format(genres if len(genres) > 0 else 'N/A')
-        self._reply(msg)
+
+        track_preview_url = spotify_track.get('preview_url', None)
+        if track_preview_url:
+            performer = spotify_track['artists'][0].get('name', 'unknown')
+            title = spotify_track.get('name', 'unknown')
+            self._reply_audio(track_preview_url, title, performer, msg)
+        else:
+            self._reply(msg)
 
     def show_search_results(self, results):
         self.update.inline_query.answer(results)
@@ -217,4 +223,11 @@ class Responser:
 
     def _reply_image(self, image, caption):
         chat_id = self.update.message.chat_id
-        self.bot.send_photo(chat_id, image, caption, disable_web_page_preview=True, parse_mode=ParseMode.HTML)
+        self.bot.send_photo(chat_id, image, caption=caption, disable_web_page_preview=True, parse_mode=ParseMode.HTML)
+
+    def _reply_audio(self, audio, title, performer, caption):
+        chat_id = self.update.message.chat_id
+        reply_to_message_id = self.update.message.message_id
+        self.bot.send_audio(chat_id, audio, title=title, performer=performer, caption=caption,
+                            reply_to_message_id=reply_to_message_id, disable_web_page_preview=True,
+                            parse_mode=ParseMode.HTML)

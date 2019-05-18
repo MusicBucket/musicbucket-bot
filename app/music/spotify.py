@@ -114,3 +114,11 @@ class SpotifyClient:
         artists_ids = [artist.id for artist in seed_artists]
         tracks = self.client.recommendations(seed_artists=artists_ids, limit=self.RECOMMENDATIONS_NUMBER)
         return tracks
+
+    def get_artist_top_track(self, artist):
+        top_track = self.client.artist_top_tracks(artist.id)['tracks'][0]
+        return top_track
+
+    def get_album_first_track(self, album):
+        first_track = self.client.album_tracks(album.id)['items'][0]
+        return first_track
