@@ -23,7 +23,7 @@ class Commands(Enum):
     MUSIC_FROM_BEGINNING = 'music_from_beginning'
     RECOMMENDATIONS = 'recommendations'
     NOW_PLAYING = 'np'
-    LASTFM_SET = 'lastfm_set'
+    LASTFMSET = 'lastfmset'
     STATS = 'stats'
     SEARCH = 'search'
 
@@ -56,8 +56,8 @@ class MusicBucketBotFactory:
         MusicBucketBotFactory._handle(bot, update, command)
 
     @staticmethod
-    def handle_lastfm_set_command(bot, update, args):
-        command = Commands.LASTFM_SET
+    def handle_lastfmset_command(bot, update, args):
+        command = Commands.LASTFMSET
         MusicBucketBotFactory._handle(bot, update, command, args)
 
     @staticmethod
@@ -122,8 +122,8 @@ class MusicBucketBot:
             self._recommendations()
         elif self.command == Commands.NOW_PLAYING:
             self._now_playing()
-        elif self.command == Commands.LASTFM_SET:
-            self._lastfm_set_username()
+        elif self.command == Commands.LASTFMSET:
+            self._lastfmset_username()
         elif self.command == Commands.STATS:
             self._stats()
         else:
@@ -239,16 +239,16 @@ class MusicBucketBot:
             f"'/np' command was called by user {self.update.message.from_user.id} "
             f"in the chat {self.update.message.chat_id}")
 
-    def _lastfm_set_username(self):
+    def _lastfmset_username(self):
         """
-        Command /lastfm_set
+        Command /lastfmset
         Sets the given Last.fm username to the current user
         """
         try:
             username = self.command_args[0]
             username = username.replace('@', '')
         except IndexError:
-            self.responser.error_lastfm_set_username_no_username()
+            self.responser.error_lastfmset_username_no_username()
             return
 
         lastfm_username, created = LastFMUsername.get_or_create(
@@ -261,10 +261,10 @@ class MusicBucketBot:
             lastfm_username.username = username
             lastfm_username.save()
 
-        self.responser.reply_lastfm_set(username)
+        self.responser.reply_lastfmset(username)
 
         logger.info(
-            f"'/lastfm_set' command was called by user {self.update.message.from_user.id} "
+            f"'/lastfmset' command was called by user {self.update.message.from_user.id} "
             f"in the chat {self.update.message.chat_id}")
 
     def _stats(self):

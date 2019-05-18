@@ -45,7 +45,7 @@ def main():
     dispatcher.add_handler(CommandHandler('recommendations', music_bucket_bot_factory.handle_recommendations_command))
     dispatcher.add_handler(CommandHandler('np', music_bucket_bot_factory.handle_now_playing_command))
     dispatcher.add_handler(
-        CommandHandler('lastfm_set', music_bucket_bot_factory.handle_lastfm_set_command, pass_args=True))
+        CommandHandler('lastfmset', music_bucket_bot_factory.handle_lastfmset_command, pass_args=True))
     dispatcher.add_handler(CommandHandler('stats',
                                           music_bucket_bot_factory.handle_stats_command))
     dispatcher.add_handler(InlineQueryHandler(music_bucket_bot_factory.handle_search))

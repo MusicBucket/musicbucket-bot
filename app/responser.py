@@ -131,7 +131,7 @@ class Responser:
 
         self._reply_image(cover, msg)
 
-    def reply_lastfm_set(self, username):
+    def reply_lastfmset(self, username):
         msg = f"<b>{username}</b>'s Last.fm username set correctly"
         self._reply(msg)
 
@@ -171,8 +171,8 @@ class Responser:
         msg = 'Command usage /music_from_beginning @username'
         self._reply(msg)
 
-    def error_lastfm_set_username_no_username(self):
-        msg = 'Command usage /lastfm_set username'
+    def error_lastfmset_username_no_username(self):
+        msg = 'Command usage /lastfmset username'
         self._reply(msg)
 
     def error_no_links_found(self, username):
