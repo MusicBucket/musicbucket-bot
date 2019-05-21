@@ -8,6 +8,7 @@ from enum import Enum
 from peewee import fn, SQL
 from telegram import InlineQueryResultArticle, InputTextMessageContent
 
+from app.logger import Logger
 from app.models import User, Chat, Link, Track, Artist, Album, Genre, LastFMUsername
 from app.music.lastfm import LastFMClient
 from app.music.music import LinkType, EntityType
@@ -89,15 +90,15 @@ class MusicBucketBotFactory:
 
 
 class MusicBucketBot:
-    """Command executor"""
+    """Command executor. Logic core."""
 
     class LinkProcessor:
         def extract_url_from_message(self, text):
             """Gets the first url of a message"""
             link = re.search("(?P<url>https?://[^\s]+)", text)
             if link is not None:
-                logger.info(f'Extracting url from message: {text}')
-                return link.group('url')
+                url = link.group('url')
+                return url
             return ''
 
     def __init__(self, *args, **kwargs):
@@ -113,9 +114,13 @@ class MusicBucketBot:
         self.responser = Responser(self.bot, self.update)
 
     def execute_search(self):
+        Logger.log_inline(self.command, self.update)
+
         self._search()
 
     def execute_command(self):
+        Logger.log_command(self.command, self.command_args, self.update)
+
         if self.command == Commands.MUSIC:
             self._music()
         elif self.command == Commands.MUSIC_FROM_BEGINNING:
@@ -156,9 +161,6 @@ class MusicBucketBot:
 
         self.responser.reply_music(last_week_links)
 
-        logger.info(
-            f"'/music' command was called by user {self.update.message.from_user.id} in chat {self.update.message.chat_id}")
-
     def _music_from_beginning(self):
         """
         Command /music_from_beginning @username
@@ -188,9 +190,6 @@ class MusicBucketBot:
         all_time_links = dict(all_time_links)
 
         self.responser.reply_music_from_beginning(all_time_links)
-        logger.info(
-            f"'/music_from_beginning' command was called by user {self.update.message.from_user.id} \
-                     in chat {self.update.message.chat_id} for the user {username}")
 
     def _recommendations(self):
         """
@@ -218,9 +217,6 @@ class MusicBucketBot:
             track_recommendations = self.spotify_client.get_recommendations(artist_seeds)
         self.responser.reply_recommendations(track_recommendations, artist_seeds)
 
-        logger.info(f"'/recommendations' command was called by user {self.update.message.from_user.id} "
-                    f"in the chat {self.update.message.chat_id}")
-
     def _now_playing(self):
         """
         Command /np
@@ -237,10 +233,6 @@ class MusicBucketBot:
         now_playing = self.lastfm_client.now_playing(username)
 
         self.responser.reply_now_playing(now_playing, username)
-
-        logger.info(
-            f"'/np' command was called by user {self.update.message.from_user.id} "
-            f"in the chat {self.update.message.chat_id}")
 
     def _lastfmset_username(self):
         """
@@ -266,10 +258,6 @@ class MusicBucketBot:
 
         self.responser.reply_lastfmset(username)
 
-        logger.info(
-            f"'/lastfmset' command was called by user {self.update.message.from_user.id} "
-            f"in the chat {self.update.message.chat_id}")
-
     def _stats(self):
         """
         Command /stats
@@ -283,10 +271,6 @@ class MusicBucketBot:
             .order_by(SQL('links').desc())
 
         self.responser.reply_stats(users)
-
-        logger.info(
-            f"'/stats' command was called by user {self.update.message.from_user.id} "
-            f"in the chat {self.update.message.chat_id}")
 
     def _search(self):
         results = []
@@ -305,7 +289,6 @@ class MusicBucketBot:
             valid_entity_type = True
 
         if valid_entity_type and len(query) >= 3:
-            logger.info(f"Searching for entity:'{entity_type}' with query:'{query}'")
             search_result = self.spotify_client.search_link(query, entity_type)
             for result in search_result:
                 thumb_url = ''
@@ -343,11 +326,12 @@ class MusicBucketBot:
         """
         url = self.link_processor.extract_url_from_message(self.update.message.text)
         link_type = self.spotify_client.get_link_type(url)
-        if not self.spotify_client.is_valid_url(url):
-            return
-        if not link_type:
-            return
-        self._process_url(url, link_type)
+        if url:
+            if not self.spotify_client.is_valid_url(url) or not link_type:
+                Logger.log_url_processing(url, False, self.update)
+                return
+            Logger.log_url_processing(url, True, self.update)
+            self._process_url(url, link_type)
 
     def _process_url(self, url, link_type):
         cleaned_url = self.spotify_client.clean_url(url)
@@ -356,7 +340,7 @@ class MusicBucketBot:
         chat = self._save_chat()
 
         # Create or update the link
-        link, updated = self._save_link(cleaned_url, link_type, user, chat)
+        link, was_updated = self._save_link(cleaned_url, link_type, user, chat)
 
         if link_type == LinkType.ARTIST:
             spotify_artist = self.spotify_client.client.artist(entity_id)
@@ -374,13 +358,12 @@ class MusicBucketBot:
             link.track = track
         link.save()
 
-        self.responser.reply_save_link(link, spotify_track, updated)
+        self.responser.reply_save_link(link, spotify_track, was_updated)
 
     # Operations
     def _save_artist(self, spotify_artist):
-        logger.info(f"Saving the artist: {spotify_artist['name']}")
         # Save or retrieve the artist
-        saved_artist, created = Artist.get_or_create(
+        saved_artist, was_created = Artist.get_or_create(
             id=spotify_artist['id'],
             defaults={
                 'name': spotify_artist['name'],
@@ -391,16 +374,15 @@ class MusicBucketBot:
                 'uri': spotify_artist['uri']})
 
         # Save or retrieve the genres
-        if created:
-            logger.info(f'Saving genres for artist {saved_artist.name}')
+        if was_created:
             saved_genres = self._save_genres(spotify_artist['genres'])
             saved_artist.genres = saved_genres
             saved_artist.save()
+            Logger.log_db_operation(Logger.DBOperation.CREATE, saved_artist)
         return saved_artist
 
     def _save_album(self, spotify_album):
-        logger.info(f"Saving the album: {spotify_album['name']}")
-        saved_album, created = Album.get_or_create(
+        saved_album, was_created = Album.get_or_create(
             id=spotify_album['id'],
             defaults={
                 'name': spotify_album['name'],
@@ -411,35 +393,30 @@ class MusicBucketBot:
                 'spotify_url': spotify_album['external_urls']['spotify'],
                 'uri': spotify_album['uri']})
 
-        if created:
+        if was_created:
             saved_artists = []
-            logger.info(f"Saving artists for album: {spotify_album['name']}")
             for album_artist in spotify_album['artists']:
                 artist_id = album_artist['id']
                 artist = self.spotify_client.client.artist(artist_id)
                 saved_artist = self._save_artist(artist)
                 saved_artists.append(saved_artist)
-                logger.info(f"Saved artist {saved_artist.name}")
             # Set the artists to the album
             saved_album.artists = saved_artist
             saved_album.save()
-            # Save the genres
-            logger.info(f"Saving genres for album {saved_album.name} with id {saved_album.id}")
+
             saved_genres = self._save_genres(spotify_album['genres'])
             saved_album.genres = saved_genres
             saved_album.save()
+            Logger.log_db_operation(Logger.DBOperation.CREATE, saved_album)
         return saved_album
 
     def _save_track(self, spotify_track):
-        logger.info(f"Saving the track: {spotify_track['name']}")
-        # Save the album
-        logger.info(f"Saving the album for track {spotify_track['name']} with id {spotify_track['id']}")
         album_id = spotify_track['album']['id']
         album = self.spotify_client.client.album(album_id)
         saved_album = self._save_album(album)
 
         # Save the track (with the album)
-        saved_track, created = Track.get_or_create(
+        saved_track, was_created = Track.get_or_create(
             id=spotify_track['id'],
             defaults={
                 'name': spotify_track['name'],
@@ -453,63 +430,60 @@ class MusicBucketBot:
                 'uri': spotify_track['uri'],
                 'album': saved_album})
 
-        if created:
+        if was_created:
             saved_artists = []
-            logger.info(f"Saving artists for track {saved_track.name} with id {saved_track.id}")
             for track_artist in spotify_track['artists']:
                 artist_id = track_artist['id']
                 artist = self.spotify_client.client.artist(artist_id)
                 saved_artist = self._save_artist(artist)
                 saved_artists.append(saved_artist)
-                logger.info(f"Saved artist {saved_artist.name}")
             # Set the artists to the album
             saved_track.artists = saved_artists
             saved_track.save()
+            Logger.log_db_operation(Logger.DBOperation.CREATE, saved_track)
         return saved_track
 
     def _save_genres(self, genres):
         saved_genres = []
         for genre in genres:
-            saved_genre, created = Genre.get_or_create(name=genre)
+            saved_genre, was_created = Genre.get_or_create(name=genre)
             saved_genres.append(saved_genre)
-            logger.info(f'Saved genre {saved_genre.name}')
+            if was_created:
+                Logger.log_db_operation(Logger.DBOperation.CREATE, saved_genre)
         return saved_genres
 
     def _save_user(self):
         # Create or get the user that sent the link
-        user, user_created = User.get_or_create(
+        user, was_created = User.get_or_create(
             id=self.update.message.from_user.id,
             defaults={
                 'username': self.update.message.from_user.username,
                 'first_name': self.update.message.from_user.first_name})
-
-        if user_created:
-            logger.info("User '{}' with id '{}' was created".format(
-                user.username if user.username else user.first_name,
-                user.id))
+        if was_created:
+            Logger.log_db_operation(Logger.DBOperation.CREATE, user)
         return user
 
     def _save_chat(self):
         # Create or get the chat where the link was sent
-        chat, chat_created = Chat.get_or_create(
+        chat, was_created = Chat.get_or_create(
             id=self.update.message.chat_id,
             defaults={
                 'name': self.update.message.chat.title or self.update.message.chat.username or self.update.message.chat.first_name
             })
-        if chat_created:
-            logger.info(f"Chat '{chat.name}' with id '{chat.id}' was created")
-
+        if was_created:
+            Logger.log_db_operation(Logger.DBOperation.CREATE, chat)
         return chat
 
     def _save_link(self, cleaned_url, link_type, user, chat):
         # Update the link if it exists for a chat, create if it doesn't exist
         link = Link.get_or_none((Link.url == cleaned_url) & (Link.chat == chat))
-        link_updated = False
+        was_updated = False
         if link is not None:
             # If link already exists, set updated_at and last_update_user to current
             link.apply_update(user)
             link.save()
-            link_updated = True
+            was_updated = True
+            Logger.log_db_operation(Logger.DBOperation.UPDATE, link)
         else:
             link = Link.create(
                 url=cleaned_url,
@@ -517,11 +491,6 @@ class MusicBucketBot:
                 created_at=datetime.datetime.now(),
                 user=user,
                 chat=chat)
+            Logger.log_db_operation(Logger.DBOperation.CREATE, link)
 
-        # Log link operation
-        link_operation = 'Saved' if not link_updated else 'Updated'
-
-        logger.info("'{}' link '{}' of type '{}' in chat '{}'".format(
-            link_operation, link.url, link.link_type, link.chat.name))
-
-        return link, link_updated
+        return link, was_updated
