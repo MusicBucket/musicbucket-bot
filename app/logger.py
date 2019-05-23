@@ -17,16 +17,20 @@ class Logger:
         user = update.message.from_user
         chat = update.message.chat
 
-        logger.info(f'Command: "{command.value}". Args: "{", ".join(command_args)}". '
-                    f'User: "{user.id} ({user.username or ""})". Chat: "{chat.id} ({chat.title or ""})"')
+        logger.info(
+            f'Command: "{command.value}". Args: "{", ".join(command_args)}". '
+            f'User: "{user.id} ({user.username or ""})". Chat: "{chat.id} ({chat.title or ""})"'
+        )
 
     @staticmethod
     def log_inline(command, update):
         user = update.inline_query.from_user
         query = update.inline_query.query
 
-        logger.info(f'Inline: "{command.value}". Query: "{query}". '
-                    f'User: "{user.id} ({user.username or ""})"')
+        logger.info(
+            f'Inline: "{command.value}". Query: "{query}". '
+            f'User: "{user.id} ({user.username or ""})"'
+        )
 
     @staticmethod
     def log_url_processing(url, is_valid, update):
@@ -35,7 +39,8 @@ class Logger:
 
         logger.info(
             f'URL: "{url}". Valid: "{is_valid}". '
-            f'User: "{user.id} ({user.username or ""})". Chat: "{chat.id} ({chat.title or ""})"')
+            f'User: "{user.id} ({user.username or ""})". Chat: "{chat.id} ({chat.title or ""})"'
+        )
 
     @staticmethod
     def log_db_operation(db_operation, entity):

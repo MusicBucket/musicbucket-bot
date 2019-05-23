@@ -39,7 +39,7 @@ def main():
 
     # Register commands
     dispatcher.add_handler(CommandHandler('music',
-                                          music_bucket_bot_factory.handle_music_command))
+                                          music_bucket_bot_factory.handle_music_command, pass_args=True))
     dispatcher.add_handler(CommandHandler('music_from_beginning',
                                           music_bucket_bot_factory.handle_music_from_beginning_command, pass_args=True))
     dispatcher.add_handler(CommandHandler('recommendations', music_bucket_bot_factory.handle_recommendations_command))

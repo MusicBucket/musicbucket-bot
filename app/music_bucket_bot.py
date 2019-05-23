@@ -40,9 +40,9 @@ class MusicBucketBotFactory:
         MusicBucketBotFactory._handle(bot, update)
 
     @staticmethod
-    def handle_music_command(bot, update):
+    def handle_music_command(bot, update, args):
         command = Command.MUSIC
-        MusicBucketBotFactory._handle(bot, update, command=command)
+        MusicBucketBotFactory._handle(bot, update, command=command, command_args=args)
 
     @staticmethod
     def handle_music_from_beginning_command(bot, update, args):
@@ -77,10 +77,12 @@ class MusicBucketBotFactory:
     @staticmethod
     def _handle(bot, update, command=None, inline=None, command_args=[]):
         args = []
-        kwargs = {'bot': bot,
-                  'update': update,
-                  'command_args': command_args,
-                  'action': command or inline}
+        kwargs = {
+            'bot': bot,
+            'update': update,
+            'command_args': command_args,
+            'action': command or inline
+        }
         music_bucket_bot = MusicBucketBot(*args, **kwargs)
 
         if command not in Command and inline not in Inline:
@@ -151,11 +153,22 @@ class MusicBucketBot:
 
         last_week_links = defaultdict(list)
 
-        links = Link.select() \
-            .join(Chat) \
-            .where(Chat.id == self.update.message.chat_id) \
-            .where((Link.created_at >= now - last_week_timedelta) | (Link.updated_at >= now - last_week_timedelta)) \
-            .order_by(Link.updated_at.asc(), Link.created_at.asc())
+        try:
+            username = self.command_args[0]
+            username = username.replace('@', '')
+            links = Link.select() \
+                .join(Chat, on=(Chat.id == Link.chat)) \
+                .join(User, on=(User.id == Link.user)) \
+                .where((Chat.id == self.update.message.chat_id) & (User.username == username)) \
+                .where((Link.created_at >= now - last_week_timedelta) | (Link.updated_at >= now - last_week_timedelta)) \
+                .order_by(Link.updated_at.asc(), Link.created_at.asc())
+
+        except IndexError:
+            links = Link.select() \
+                .join(Chat) \
+                .where(Chat.id == self.update.message.chat_id) \
+                .where((Link.created_at >= now - last_week_timedelta) | (Link.updated_at >= now - last_week_timedelta)) \
+                .order_by(Link.updated_at.asc(), Link.created_at.asc())
 
         for link in links:
             last_week_links[link.user].append(link)
