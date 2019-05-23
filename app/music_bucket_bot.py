@@ -19,14 +19,16 @@ from app.responser import Responser
 logger = logging.getLogger(__name__)
 
 
-class Commands(Enum):
-    SAVE_LINK = 'save_link'
+class Command(Enum):
     MUSIC = 'music'
     MUSIC_FROM_BEGINNING = 'music_from_beginning'
     RECOMMENDATIONS = 'recommendations'
     NOW_PLAYING = 'np'
     LASTFMSET = 'lastfmset'
     STATS = 'stats'
+
+
+class Inline(Enum):
     SEARCH = 'search'
 
 
@@ -35,65 +37,66 @@ class MusicBucketBotFactory:
 
     @staticmethod
     def handle_save_link(bot, update):
-        MusicBucketBotFactory._handle(bot, update, command=None)
+        MusicBucketBotFactory._handle(bot, update)
 
     @staticmethod
     def handle_music_command(bot, update):
-        command = Commands.MUSIC
-        MusicBucketBotFactory._handle(bot, update, command)
+        command = Command.MUSIC
+        MusicBucketBotFactory._handle(bot, update, command=command)
 
     @staticmethod
     def handle_music_from_beginning_command(bot, update, args):
-        command = Commands.MUSIC_FROM_BEGINNING
-        MusicBucketBotFactory._handle(bot, update, command, args)
+        command = Command.MUSIC_FROM_BEGINNING
+        MusicBucketBotFactory._handle(bot, update, command=command, command_args=args)
 
     @staticmethod
     def handle_recommendations_command(bot, update):
-        command = Commands.RECOMMENDATIONS
-        MusicBucketBotFactory._handle(bot, update, command)
+        command = Command.RECOMMENDATIONS
+        MusicBucketBotFactory._handle(bot, update, command=command)
 
     @staticmethod
     def handle_now_playing_command(bot, update):
-        command = Commands.NOW_PLAYING
-        MusicBucketBotFactory._handle(bot, update, command)
+        command = Command.NOW_PLAYING
+        MusicBucketBotFactory._handle(bot, update, command=command)
 
     @staticmethod
     def handle_lastfmset_command(bot, update, args):
-        command = Commands.LASTFMSET
-        MusicBucketBotFactory._handle(bot, update, command, args)
+        command = Command.LASTFMSET
+        MusicBucketBotFactory._handle(bot, update, command=command, command_args=args)
 
     @staticmethod
     def handle_stats_command(bot, update):
-        command = Commands.STATS
-        MusicBucketBotFactory._handle(bot, update, command)
+        command = Command.STATS
+        MusicBucketBotFactory._handle(bot, update, command=command)
 
     @staticmethod
     def handle_search(bot, update):
-        command = Commands.SEARCH
-        MusicBucketBotFactory._handle(bot, update, command)
+        inline = Inline.SEARCH
+        MusicBucketBotFactory._handle(bot, update, inline=inline)
 
     @staticmethod
-    def _handle(bot, update, command, command_args=[]):
+    def _handle(bot, update, command=None, inline=None, command_args=[]):
         args = []
         kwargs = {'bot': bot,
                   'update': update,
                   'command_args': command_args,
-                  'command': command}
+                  'action': command or inline}
         music_bucket_bot = MusicBucketBot(*args, **kwargs)
 
-        if command not in Commands:
+        if command not in Command and inline not in Inline:
             music_bucket_bot.process_message()
-        elif command == Commands.SEARCH:
-            music_bucket_bot.execute_search()
-        else:
+        elif command:
             music_bucket_bot.execute_command()
+        elif inline:
+            music_bucket_bot.execute_inline()
 
 
 class MusicBucketBot:
     """Command executor. Logic core."""
 
     class LinkProcessor:
-        def extract_url_from_message(self, text):
+        @staticmethod
+        def extract_url_from_message(text):
             """Gets the first url of a message"""
             link = re.search("(?P<url>https?://[^\s]+)", text)
             if link is not None:
@@ -102,7 +105,7 @@ class MusicBucketBot:
             return ''
 
     def __init__(self, *args, **kwargs):
-        self.command = kwargs.get('command')
+        self.action = kwargs.get('action')
         self.command_args = kwargs.get('command_args')
         self.bot = kwargs.get('bot')
         self.update = kwargs.get('update')
@@ -110,28 +113,27 @@ class MusicBucketBot:
         self.spotify_client = SpotifyClient()
         self.lastfm_client = LastFMClient()
         self.musicbrainz_client = MusicBrainzClient()
-        self.link_processor = self.LinkProcessor()
         self.responser = Responser(self.bot, self.update)
 
-    def execute_search(self):
-        Logger.log_inline(self.command, self.update)
+    def execute_inline(self):
+        Logger.log_inline(self.action, self.update)
 
         self._search()
 
     def execute_command(self):
-        Logger.log_command(self.command, self.command_args, self.update)
+        Logger.log_command(self.action, self.command_args, self.update)
 
-        if self.command == Commands.MUSIC:
+        if self.action == Command.MUSIC:
             self._music()
-        elif self.command == Commands.MUSIC_FROM_BEGINNING:
+        elif self.action == Command.MUSIC_FROM_BEGINNING:
             self._music_from_beginning()
-        elif self.command == Commands.RECOMMENDATIONS:
+        elif self.action == Command.RECOMMENDATIONS:
             self._recommendations()
-        elif self.command == Commands.NOW_PLAYING:
+        elif self.action == Command.NOW_PLAYING:
             self._now_playing()
-        elif self.command == Commands.LASTFMSET:
+        elif self.action == Command.LASTFMSET:
             self._lastfmset_username()
-        elif self.command == Commands.STATS:
+        elif self.action == Command.STATS:
             self._stats()
         else:
             self.process_message()
@@ -324,7 +326,7 @@ class MusicBucketBot:
         saves it to the database.
         It also saves the user and the chat if they don't exist @ database
         """
-        url = self.link_processor.extract_url_from_message(self.update.message.text)
+        url = self.LinkProcessor.extract_url_from_message(self.update.message.text)
         link_type = self.spotify_client.get_link_type(url)
         if url:
             if not self.spotify_client.is_valid_url(url) or not link_type:
