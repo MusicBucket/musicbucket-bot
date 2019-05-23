@@ -8,13 +8,13 @@ from enum import Enum
 from peewee import fn, SQL
 from telegram import InlineQueryResultArticle, InputTextMessageContent
 
-from app.logger import Logger
-from app.models import User, Chat, Link, Track, Artist, Album, Genre, LastFMUsername
-from app.music.lastfm import LastFMClient
-from app.music.music import LinkType, EntityType
-from app.music.musicbrainz import MusicBrainzClient
-from app.music.spotify import SpotifyClient
-from app.responser import Responser
+from src.bot.logger import Logger
+from src.bot.models import User, Chat, Link, Track, Artist, Album, Genre, LastFMUsername
+from src.bot.music.music import LinkType, EntityType
+from src.bot.music.lastfm import LastFMClient
+from src.bot.music.musicbrainz import MusicBrainzClient
+from src.bot.music.spotify import SpotifyClient
+from src.bot.responser import Responser
 
 logger = logging.getLogger(__name__)
 

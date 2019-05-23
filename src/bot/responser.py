@@ -2,9 +2,9 @@ import logging
 import time
 
 from telegram import ParseMode
-
-from app.music.music import LinkType
 from emoji import emojize
+
+from src.bot.music.music import LinkType
 
 logger = logging.getLogger(__name__)
 

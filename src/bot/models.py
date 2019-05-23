@@ -4,8 +4,8 @@ import logging
 from peewee import Model, CharField, DateTimeField, IntegerField, ForeignKeyField, CompositeKey, ManyToManyField, \
     BooleanField
 
-from app.db import db
-from app.music.music import StreamingServiceType, LinkType
+from src.bot.db import db
+from src.bot.music.music import StreamingServiceType, LinkType
 
 logger = logging.getLogger(__name__)
 

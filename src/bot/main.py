@@ -1,13 +1,12 @@
-from app.db import db
-from app.models import Link, Artist, Genre, User, Chat, Album, Track, AlbumArtist, AlbumGenre, ArtistGenre, \
-    TrackArtist, LastFMUsername
+import logging
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, InlineQueryHandler
 from dotenv import load_dotenv
-from os import getenv as getenv
-import logging
+from os import getenv
 
-# Load environment variables from .env file
-from app.music_bucket_bot import MusicBucketBotFactory
+from src.bot.db import db
+from src.bot.models import Link, Artist, Genre, User, Chat, Album, Track, AlbumArtist, AlbumGenre, ArtistGenre, \
+    TrackArtist, LastFMUsername
+from src.bot.music_bucket_bot import MusicBucketBotFactory
 
 load_dotenv()
 

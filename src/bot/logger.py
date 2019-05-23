@@ -1,7 +1,6 @@
 import logging
-from enum import Enum
 
-from app import models
+from src.bot import models
 
 logger = logging.getLogger(__name__)
 
