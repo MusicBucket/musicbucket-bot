@@ -32,7 +32,7 @@ class Responser:
                     msg += '    {} <a href="{}">{} - {}</a> {}\n'.format(
                         emojize(':cd:', use_aliases=True),
                         link.url,
-                        link.album.artists.first().name,
+                        link.album.get_first_artist().name if link.album.get_first_artist() else '',
                         link.album.name,
                         '({})'.format(link.genres[0]) if len(link.genres) > 0 is not None else '')
                 elif link.link_type == LinkType.TRACK.value:
@@ -40,7 +40,7 @@ class Responser:
                         emojize(':musical_note:', use_aliases=True),
                         link.url,
                         link.track.name,
-                        link.track.artists.first().name,
+                        link.track.artists.first().name if link.track.get_first_artist() else '',
                         '({})'.format(link.genres[0]) if len(
                             link.genres) > 0 is not None else '')
             msg += '\n'

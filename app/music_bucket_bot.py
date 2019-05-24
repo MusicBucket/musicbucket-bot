@@ -288,8 +288,6 @@ class MusicBucketBot:
         self.responser.reply_stats(users)
 
     def _search(self):
-        results = []
-
         user_input = self.update.inline_query.query
 
         entity_type = user_input.split(' ', 1)[0]
@@ -303,18 +301,17 @@ class MusicBucketBot:
         elif entity_type == EntityType.TRACK.value:
             valid_entity_type = True
 
+        results = []
         if valid_entity_type and len(query) >= 3:
             search_result = self.spotify_client.search_link(query, entity_type)
             for result in search_result:
                 thumb_url = ''
                 description = ''
 
-                # If the result are tracks, look for the album cover
                 if entity_type == EntityType.TRACK.value:
                     album = result['album']
                     artists = result['artists']
                     thumb_url = album['images'][0]['url']
-                    # [o.my_attr for o in my_list]
                     description = '{} - {}'.format(', '.join(artist['name'] for artist in artists), album['name'])
                 elif entity_type == EntityType.ALBUM.value:
                     thumb_url = result['images'][0]['url'] if len(result['images']) > 0 else ''
@@ -324,12 +321,15 @@ class MusicBucketBot:
                     thumb_url = result['images'][0]['url'] if len(result['images']) > 0 else ''
                     description = ', '.join(result['genres'])
 
-                results.append(InlineQueryResultArticle(
-                    id=result['id'],
-                    thumb_url=thumb_url,
-                    title=result['name'],
-                    description=description,
-                    input_message_content=InputTextMessageContent(result['external_urls']['spotify'])))
+                results.append(
+                    InlineQueryResultArticle(
+                        id=result['id'],
+                        thumb_url=thumb_url,
+                        title=result['name'],
+                        description=description,
+                        input_message_content=InputTextMessageContent(result['external_urls']['spotify'])
+                    )
+                )
 
         self.responser.show_search_results(results)
 

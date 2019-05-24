@@ -70,6 +70,11 @@ class Album(BaseModel):
     genres = ManyToManyField(Genre, backref='albums')
     artists = ManyToManyField(Artist, backref='albums')
 
+    def get_first_artist(self):
+        if self.artists:
+            return self.artists.first()
+        return None
+
 
 AlbumGenre = Album.genres.get_through_model()
 AlbumArtist = Album.artists.get_through_model()
@@ -88,6 +93,11 @@ class Track(BaseModel):
     uri = CharField()
     album = ForeignKeyField(Album, backref='tracks')
     artists = ManyToManyField(Artist, backref='tracks')
+
+    def get_first_artist(self):
+        if self.artists:
+            return self.artists.first()
+        return None
 
 
 TrackArtist = Track.artists.get_through_model()
