@@ -126,9 +126,9 @@ class Link(BaseModel):
         if self.link_type == LinkType.ARTIST.value:
             genres = self.artist.genres
         elif self.link_type == LinkType.ALBUM.value:
-            genres = self.album.artists.first().genres
+            genres = self.album.get_first_artist().genres if self.album.get_first_artist() else None
         elif self.link_type == LinkType.TRACK.value:
-            genres = self.track.artists.first().genres
+            genres = self.track.get_first_artist().genres if self.track.get_first_artist() else None
         if not genres:
             return []
         return genres
