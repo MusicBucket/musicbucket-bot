@@ -17,6 +17,7 @@ peewee = "*"
 ipdb = "*"
 pylast = "*"
 musicbrainzngs = "*"
+sentry-sdk = "==0.8.0"
 
 [requires]
 python_version = "3.7"

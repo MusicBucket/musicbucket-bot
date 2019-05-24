@@ -83,14 +83,14 @@ class MusicBucketBotFactory:
             'command_args': command_args,
             'action': command or inline
         }
-        music_bucket_bot = MusicBucketBot(*args, **kwargs)
+        musicbucket_bot = MusicBucketBot(*args, **kwargs)
 
         if command not in Command and inline not in Inline:
-            music_bucket_bot.process_message()
+            musicbucket_bot.process_message()
         elif command:
-            music_bucket_bot.execute_command()
+            musicbucket_bot.execute_command()
         elif inline:
-            music_bucket_bot.execute_inline()
+            musicbucket_bot.execute_inline()
 
 
 class MusicBucketBot:
