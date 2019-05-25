@@ -10,13 +10,10 @@ from bot.models import Link, Artist, Genre, User, Chat, Album, Track, AlbumArtis
     TrackArtist, LastFMUsername
 from bot.musicbucket_bot import MusicBucketBotFactory
 
-# Load environment variables from .env file
-
-
 load_dotenv()
 
 logging.basicConfig(
-    # filename='musicbucket-bot.log',
+    filename='musicbucket-bot.log',
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO)
 logger = logging.getLogger(__name__)
