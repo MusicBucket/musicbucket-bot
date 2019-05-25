@@ -5,7 +5,7 @@ import spotipy
 from dotenv import load_dotenv
 from spotipy.oauth2 import SpotifyClientCredentials
 
-from src.bot.music.music import LinkType, LinkInfo, EntityType
+from bot.music.music import LinkType, LinkInfo, EntityType
 
 # Spotify client init
 load_dotenv()

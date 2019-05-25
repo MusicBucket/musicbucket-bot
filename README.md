@@ -13,7 +13,8 @@ It also integrates with **Last.fm** to retrieve information about your user like
 - [x] Spotify
 
 ### Commands
-- ```/music``` Retrieves the music shared in the chat from the last week. Grouped by user.
+- ```/music [@username]``` Retrieves the music shared in the chat from the last week. Grouped by user. 
+                           Filter by @username optionally.
 - ```/music_from_beginning @username``` Retrieves the music shared in the chat from the beginning of time by an user.
 - ```/recommendations``` Returns a list of 10 recommended tracks based on the sent albums from the last week.
 - ```/np``` Now Playing. Returns track information about what you are currently playing in Last.fm.

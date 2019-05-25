@@ -4,8 +4,8 @@ import logging
 from peewee import Model, CharField, DateTimeField, IntegerField, ForeignKeyField, CompositeKey, ManyToManyField, \
     BooleanField
 
-from src.bot.db import db
-from src.bot.music.music import StreamingServiceType, LinkType
+from bot.db import db
+from bot.music.music import StreamingServiceType, LinkType
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +70,11 @@ class Album(BaseModel):
     genres = ManyToManyField(Genre, backref='albums')
     artists = ManyToManyField(Artist, backref='albums')
 
+    def get_first_artist(self):
+        if self.artists:
+            return self.artists.first()
+        return None
+
 
 AlbumGenre = Album.genres.get_through_model()
 AlbumArtist = Album.artists.get_through_model()
@@ -88,6 +93,11 @@ class Track(BaseModel):
     uri = CharField()
     album = ForeignKeyField(Album, backref='tracks')
     artists = ManyToManyField(Artist, backref='tracks')
+
+    def get_first_artist(self):
+        if self.artists:
+            return self.artists.first()
+        return None
 
 
 TrackArtist = Track.artists.get_through_model()
@@ -116,9 +126,9 @@ class Link(BaseModel):
         if self.link_type == LinkType.ARTIST.value:
             genres = self.artist.genres
         elif self.link_type == LinkType.ALBUM.value:
-            genres = self.album.artists.first().genres
+            genres = self.album.get_first_artist().genres if self.album.get_first_artist() else None
         elif self.link_type == LinkType.TRACK.value:
-            genres = self.track.artists.first().genres
+            genres = self.track.get_first_artist().genres if self.track.get_first_artist() else None
         if not genres:
             return []
         return genres
