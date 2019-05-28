@@ -110,6 +110,11 @@ class Responser:
         self._reply(msg)
 
     def reply_now_playing(self, now_playing, username):
+        if not username:
+            msg = f'There is no Last.fm username for your user. Please set your username with:\n' \
+                f'<i>/lastfmset username</i>'
+            self._reply(msg)
+            return
         if not now_playing:
             msg = f'<b>{username}</b> is not currently playing music'
             self._reply(msg)

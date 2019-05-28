@@ -241,11 +241,11 @@ class MusicBucketBot:
         from_user = self.update.message.from_user
         lastfm_username = LastFMUsername.get_or_none(from_user.id)
         if not lastfm_username:
-            username = from_user.username or from_user.name
-            logger.warning(f"Last.fm user not found in the database. Using the Telegram's default {username}")
+            username = None
+            now_playing = None
         else:
             username = lastfm_username.username
-        now_playing = self.lastfm_client.now_playing(username)
+            now_playing = self.lastfm_client.now_playing(username)
 
         self.responser.reply_now_playing(now_playing, username)
 
