@@ -2,7 +2,7 @@ import sentry_sdk
 
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, InlineQueryHandler
 from dotenv import load_dotenv
-from os import getenv as getenv
+from os import getenv
 import logging
 
 from bot.db import db

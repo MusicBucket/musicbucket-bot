@@ -223,6 +223,7 @@ class MusicBucketBot:
             .where(Link.link_type == LinkType.ALBUM.value) \
             .order_by(Link.updated_at.asc(), Link.created_at.asc())
 
+        artist_seeds = []
         if len(album_seeds) == 0:
             track_recommendations = []
         else:
