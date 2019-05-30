@@ -378,7 +378,7 @@ class MusicBucketBot:
 
     # Operations
     def _save_artist(self, spotify_artist):
-        image = spotify_artist['images'][0]['url'] if len(spotify_artist)['images'] > 0 else ''
+        image = spotify_artist['images'][0]['url'] if len(spotify_artist['images']) > 0 else ''
 
         saved_artist, was_created = Artist.get_or_create(
             id=spotify_artist['id'],
@@ -399,7 +399,7 @@ class MusicBucketBot:
         return saved_artist
 
     def _save_album(self, spotify_album):
-        image = spotify_album['images'][0]['url'] if len(spotify_album)['images'] > 0 else ''
+        image = spotify_album['images'][0]['url'] if len(spotify_album['images']) > 0 else ''
 
         saved_album, was_created = Album.get_or_create(
             id=spotify_album['id'],
