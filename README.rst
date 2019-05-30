@@ -37,13 +37,13 @@ Screenshots
 ____________
 
 .. image:: https://github.com/paurieraf/musicbucket-bot/blob/master/images/screenshots/screenshot_1.jpg?raw=True
-    :width: 24%
+    :width: 23%
 .. image:: https://github.com/paurieraf/musicbucket-bot/blob/master/images/screenshots/screenshot_2.jpg?raw=True
-    :width: 24%
+    :width: 23%
 .. image:: https://github.com/paurieraf/musicbucket-bot/blob/master/images/screenshots/screenshot_3.jpg?raw=True
-    :width: 24%
+    :width: 23%
 .. image:: https://github.com/paurieraf/musicbucket-bot/blob/master/images/screenshots/screenshot_4.jpg?raw=True
-    :width: 24%
+    :width: 23%
 
 
 
