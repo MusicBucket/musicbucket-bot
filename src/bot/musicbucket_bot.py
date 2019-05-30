@@ -247,7 +247,10 @@ class MusicBucketBot:
             username = lastfm_username.username
             now_playing = self.lastfm_client.now_playing(username)
 
-            # Tries to save the received info as a sent link
+        self.responser.reply_now_playing(now_playing, username)
+
+        # Tries to save the received info as a sent link
+        if now_playing:
             album = now_playing.get('album')
             track = now_playing.get('track')
             if album:
@@ -260,8 +263,6 @@ class MusicBucketBot:
             if candidate:
                 url = candidate['external_urls']['spotify']
                 self._process_url(url, link_type)
-
-        self.responser.reply_now_playing(now_playing, username)
 
     def _lastfmset_username(self):
         """
