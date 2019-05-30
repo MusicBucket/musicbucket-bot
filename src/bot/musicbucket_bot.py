@@ -236,8 +236,7 @@ class MusicBucketBot:
     def _now_playing(self):
         """
         Command /np
-        Shows which track is the user currently playing
-        TODO: By getting MBID from the returned track artist, call MB API and get Spotify Link to save it in the database as a sent recommendation
+        Shows which track is the user currently playing and saves it as a sent link
         """
         from_user = self.update.message.from_user
         lastfm_username = LastFMUsername.get_or_none(from_user.id)
@@ -247,6 +246,20 @@ class MusicBucketBot:
         else:
             username = lastfm_username.username
             now_playing = self.lastfm_client.now_playing(username)
+
+            # Tries to save the received info as a sent link
+            album = now_playing.get('album')
+            track = now_playing.get('track')
+            if album:
+                results = self.spotify_client.search_link(album, EntityType.ALBUM.value)
+                link_type = LinkType.ALBUM
+            else:
+                results = self.spotify_client.search_link(track, EntityType.TRACK.value)
+                link_type = LinkType.TRACK
+            candidate = results[0] if len(results) > 0 else None
+            if candidate:
+                url = candidate['external_urls']['spotify']
+                self._process_url(url, link_type)
 
         self.responser.reply_now_playing(now_playing, username)
 
@@ -262,8 +275,11 @@ class MusicBucketBot:
             self.responser.error_lastfmset_username_no_username()
             return
 
+        self._save_chat()
+        user = self._save_user()
+
         lastfm_username, created = LastFMUsername.get_or_create(
-            user=self.update.message.from_user.id,
+            user=user,
             defaults={
                 'username': username
             }

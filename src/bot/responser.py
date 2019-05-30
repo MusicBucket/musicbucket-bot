@@ -123,10 +123,10 @@ class Responser:
         artist_emoji = emojize(':busts_in_silhouette:', use_aliases=True)
         album_emoji = emojize(':cd:', use_aliases=True)
         track_emoji = emojize(':musical_note:', use_aliases=True)
-        artist = now_playing['artist']
-        album = now_playing['album']
-        track = now_playing['track']
-        cover = now_playing['cover']
+        artist = now_playing.get('artist')
+        album = now_playing.get('album')
+        track = now_playing.get('track')
+        cover = now_playing.get('cover')
 
         msg = f"<b>{username}</b>'s now playing:\n"
         msg += f"{track_emoji} {track.title}\n"
