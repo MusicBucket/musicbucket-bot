@@ -2,8 +2,12 @@ Music Bucket Bot
 ================
 
 A Telegram Bot that collects **Spotify** music links that users send in
-a chat and shows them by request, with the related info: - *Artist* -
-*Album* - *Track* - *Genres*
+a chat and shows them by request, with the related info:
+
+-  *Artist*
+-  *Album*
+-  *Track*
+-  *Genres*
 
 It also integrates with **Last.fm** to retrieve information about your
 user like **Now Playing**.
@@ -37,13 +41,13 @@ Screenshots
 ____________
 
 .. image:: https://github.com/paurieraf/musicbucket-bot/blob/master/images/screenshots/screenshot_1.jpg?raw=True
-    :width: 49%
+   :width: 24%
 .. image:: https://github.com/paurieraf/musicbucket-bot/blob/master/images/screenshots/screenshot_2.jpg?raw=True
-    :width: 49%
+   :width: 24%
 .. image:: https://github.com/paurieraf/musicbucket-bot/blob/master/images/screenshots/screenshot_3.jpg?raw=True
-    :width: 49%
+   :width: 24%
 .. image:: https://github.com/paurieraf/musicbucket-bot/blob/master/images/screenshots/screenshot_4.jpg?raw=True
-    :width: 49%
+   :width: 24%
 
 
 
