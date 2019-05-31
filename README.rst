@@ -40,15 +40,16 @@ Commands
 Screenshots
 ____________
 
-.. image:: https://github.com/paurieraf/musicbucket-bot/blob/master/images/screenshots/screenshot_1.jpg?raw=True
-   :width: 20 %
-.. image:: https://github.com/paurieraf/musicbucket-bot/blob/master/images/screenshots/screenshot_2.jpg?raw=True
-   :width: 20 %
-.. image:: https://github.com/paurieraf/musicbucket-bot/blob/master/images/screenshots/screenshot_3.jpg?raw=True
-   :width: 20 %
-.. image:: https://github.com/paurieraf/musicbucket-bot/blob/master/images/screenshots/screenshot_4.jpg?raw=True
-   :width: 20 %
+.. |screenshot_1| image:: https://github.com/paurieraf/musicbucket-bot/blob/master/images/screenshots/screenshot_1.jpg?raw=True
+.. |screenshot_2| image:: https://github.com/paurieraf/musicbucket-bot/blob/master/images/screenshots/screenshot_2.jpg?raw=True
+.. |screenshot_3| image:: https://github.com/paurieraf/musicbucket-bot/blob/master/images/screenshots/screenshot_3.jpg?raw=True
+.. |screenshot_4| image:: https://github.com/paurieraf/musicbucket-bot/blob/master/images/screenshots/screenshot_4.jpg?raw=True
 
+================================  ================================
+|screenshot_1|                    |screenshot_3|
+
+|screenshot_2|                    |screenshot_4|
+================================  ================================
 
 
 Installation
