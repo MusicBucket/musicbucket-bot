@@ -20,7 +20,7 @@ class Responser:
         msg = '<strong>Music from the last week:</strong> \n'
         for user, links in user_links.items():
             msg += '- {} <strong>{}:</strong>\n'.format(emojize(':baby:', use_aliases=True),
-                                                        user.username or user.firstname)
+                                                        user.username or user.first_name)
             for link in links:
                 if link.link_type == LinkType.ARTIST.value:
                     msg += '    {} <a href="{}">{}</a> {}\n'.format(
@@ -50,7 +50,7 @@ class Responser:
         msg = '<strong>Music from the beginning of time:</strong> \n'
         for user, links in user_links.items():
             msg += '- {} <strong>{}:</strong>\n'.format(emojize(':baby:', use_aliases=True),
-                                                        user.username or user.firstname)
+                                                        user.username or user.first_name)
             for link in links:
                 if link.link_type == LinkType.ARTIST.value:
                     msg += '    {}  {} <a href="{}">{}</a> {}\n'.format(
@@ -149,7 +149,7 @@ class Responser:
 
         for user in users:
             msg += '- {} <strong>{}:</strong> {}\n'.format(emojize(':baby:', use_aliases=True),
-                                                           user.username or user.firstname,
+                                                           user.username or user.first_name,
                                                            user.links)
         self._reply(msg)
 
