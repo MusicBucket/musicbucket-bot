@@ -199,7 +199,7 @@ class Responser:
         self._reply(msg)
 
     def _reply(self, message):
-        """Replies the message to the original chat"""
+        """Replies the message to the original chat splitting the message if necessary"""
         if len(message) <= self.MAX_MESSAGE_LENGTH:
             self.update.message.reply_text(message, disable_web_page_preview=True,
                                            parse_mode=ParseMode.HTML)

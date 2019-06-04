@@ -2,10 +2,10 @@ import logging
 
 from bot import models
 
-logger = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
 
 
-class Logger:
+class LoggerMixin:
     class DBOperation:
         CREATE = 'Create'
         UPDATE = 'Update'
@@ -16,18 +16,18 @@ class Logger:
         user = update.message.from_user
         chat = update.message.chat
 
-        logger.info(
-            f'Command: "{command.value}". Args: "{", ".join(command_args)}". '
+        log.info(
+            f'Command: "{command}". Args: "{", ".join(command_args)}". '
             f'User: "{user.id} ({user.username or ""})". Chat: "{chat.id} ({chat.title or ""})"'
         )
 
     @staticmethod
-    def log_inline(command, update):
+    def log_inline(inline, update):
         user = update.inline_query.from_user
         query = update.inline_query.query
 
-        logger.info(
-            f'Inline: "{command.value}". Query: "{query}". '
+        log.info(
+            f'Inline: "{inline}". Query: "{query}". '
             f'User: "{user.id} ({user.username or ""})"'
         )
 
@@ -36,7 +36,7 @@ class Logger:
         user = update.message.from_user
         chat = update.message.chat
 
-        logger.info(
+        log.info(
             f'URL: "{url}". Valid: "{is_valid}". '
             f'User: "{user.id} ({user.username or ""})". Chat: "{chat.id} ({chat.title or ""})"'
         )
@@ -61,4 +61,4 @@ class Logger:
         elif isinstance(entity, models.Genre):
             msg = f'{db_operation}. Genre: "{entity}"'
 
-        logger.info(msg)
+        log.info(msg)

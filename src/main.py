@@ -6,14 +6,16 @@ from os import getenv
 import logging
 
 from bot.db import db
+from bot.messages import MessageProcessor
 from bot.models import Link, Artist, Genre, User, Chat, Album, Track, AlbumArtist, AlbumGenre, ArtistGenre, \
     TrackArtist, LastFMUsername
-from bot.musicbucket_bot import MusicBucketBotFactory
+from bot.commands import CommandFactory
+from bot.search import SearchInline
 
 load_dotenv()
 
 logging.basicConfig(
-    filename='musicbucket-bot.log',
+    # filename='musicbucket-bot.log',
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -45,24 +47,22 @@ def main():
     # Register handlers
     dispatcher = updater.dispatcher
 
-    musicbucket_bot_factory = MusicBucketBotFactory()
-
     # Register commands
     dispatcher.add_handler(CommandHandler('music',
-                                          musicbucket_bot_factory.handle_music_command, pass_args=True))
+                                          CommandFactory.run_music_command, pass_args=True))
     dispatcher.add_handler(CommandHandler('music_from_beginning',
-                                          musicbucket_bot_factory.handle_music_from_beginning_command, pass_args=True))
-    dispatcher.add_handler(CommandHandler('recommendations', musicbucket_bot_factory.handle_recommendations_command))
-    dispatcher.add_handler(CommandHandler('np', musicbucket_bot_factory.handle_now_playing_command))
+                                          CommandFactory.run_music_from_beginning_command, pass_args=True))
+    dispatcher.add_handler(CommandHandler('recommendations', CommandFactory.run_recommendations_command))
+    dispatcher.add_handler(CommandHandler('np', CommandFactory.run_now_playing_command))
     dispatcher.add_handler(
-        CommandHandler('lastfmset', musicbucket_bot_factory.handle_lastfmset_command, pass_args=True))
+        CommandHandler('lastfmset', CommandFactory.run_lastfmset_command, pass_args=True))
     dispatcher.add_handler(CommandHandler('stats',
-                                          musicbucket_bot_factory.handle_stats_command))
-    dispatcher.add_handler(InlineQueryHandler(musicbucket_bot_factory.handle_search))
+                                          CommandFactory.run_stats_command))
+    dispatcher.add_handler(InlineQueryHandler(SearchInline))
 
     # Non command handlers
     dispatcher.add_handler(MessageHandler(
-        Filters.text, musicbucket_bot_factory.handle_save_link))
+        Filters.text, MessageProcessor.process_message))
 
     # Start the bot
     updater.start_polling()

@@ -1,13 +1,11 @@
 import datetime
-import logging
 
 from peewee import Model, CharField, DateTimeField, IntegerField, ForeignKeyField, CompositeKey, ManyToManyField, \
     BooleanField
 
 from bot.db import db
 from bot.music.music import StreamingServiceType, LinkType
-
-logger = logging.getLogger(__name__)
+from bot.music.spotify import SpotifyClient
 
 
 class BaseModel(Model):
@@ -64,7 +62,7 @@ class Album(BaseModel):
     image = CharField(null=True)
     popularity = IntegerField(null=True)
     href = CharField(null=True)
-    spotify_url = CharField(null=True)  # external_urls['spotify']
+    spotify_url = CharField(null=True)
     album_type = CharField(null=True)
     uri = CharField()
     genres = ManyToManyField(Genre, backref='albums')
@@ -88,7 +86,7 @@ class Track(BaseModel):
     explicit = BooleanField(null=True)
     popularity = IntegerField(null=True)
     href = CharField(null=True)
-    spotify_url = CharField(null=True)  # external_urls['spotify']
+    spotify_url = CharField(null=True)
     preview_url = CharField(null=True)
     uri = CharField()
     album = ForeignKeyField(Album, backref='tracks')
@@ -148,3 +146,155 @@ class Link(BaseModel):
 class LastFMUsername(BaseModel):
     user = ForeignKeyField(User, backref='lastfm_username', primary_key=True)
     username = CharField(unique=True)
+
+
+class SaveChatMixin:
+    def __init__(self):
+        from bot.logger import LoggerMixin
+        self.logger = LoggerMixin()
+
+    def save_chat(self, update):
+        chat, was_created = Chat.get_or_create(
+            id=update.message.chat_id,
+            defaults={
+                'name': update.message.chat.title or update.message.chat.username or update.message.chat.first_name
+            })
+        if was_created:
+            self.logger.log_db_operation(self.logger.DBOperation.CREATE, chat)
+        return chat
+
+
+class SaveUserMixin:
+    def __init__(self):
+        from bot.logger import LoggerMixin
+        self.logger = LoggerMixin()
+
+    def save_user(self, update):
+        user, was_created = User.get_or_create(
+            id=update.message.from_user.id,
+            defaults={
+                'username': update.message.from_user.username,
+                'first_name': update.message.from_user.first_name})
+        if was_created:
+            self.logger.log_db_operation(self.logger.DBOperation.CREATE, user)
+        return user
+
+
+class SaveGenresMixin:
+    def __init__(self):
+        from bot.logger import LoggerMixin
+        self.logger = LoggerMixin()
+
+    def save_genres(self, genres):
+        saved_genres = []
+        for genre in genres:
+            saved_genre, was_created = Genre.get_or_create(name=genre)
+            saved_genres.append(saved_genre)
+            if was_created:
+                self.logger.log_db_operation(self.logger.DBOperation.CREATE, saved_genre)
+        return saved_genres
+
+
+class SaveArtistMixin(SaveGenresMixin):
+    def __init__(self):
+        from bot.logger import LoggerMixin
+        self.logger = LoggerMixin()
+
+    def save_artist(self, spotify_artist):
+        image = spotify_artist['images'][0]['url'] if len(spotify_artist['images']) > 0 else ''
+
+        saved_artist, was_created = Artist.get_or_create(
+            id=spotify_artist['id'],
+            defaults={
+                'name': spotify_artist['name'],
+                'image': image,
+                'popularity': spotify_artist['popularity'],
+                'href': spotify_artist['href'],
+                'spotify_url': spotify_artist['external_urls']['spotify'],
+                'uri': spotify_artist['uri']})
+
+        # Save or retrieve the genres
+        if was_created:
+            saved_genres = self.save_genres(spotify_artist['genres'])
+            saved_artist.genres = saved_genres
+            saved_artist.save()
+            self.logger.log_db_operation(self.logger.DBOperation.CREATE, saved_artist)
+        return saved_artist
+
+
+class SaveAlbumMixin(SaveArtistMixin):
+    def __init__(self):
+        from bot.logger import LoggerMixin
+        self.logger = LoggerMixin()
+        self.spotify_client = SpotifyClient()
+
+    def save_album(self, spotify_album):
+        image = spotify_album['images'][0]['url'] if len(spotify_album['images']) > 0 else ''
+
+        saved_album, was_created = Album.get_or_create(
+            id=spotify_album['id'],
+            defaults={
+                'name': spotify_album['name'],
+                'label': spotify_album['label'],
+                'image': image,
+                'popularity': spotify_album['popularity'],
+                'href': spotify_album['href'],
+                'spotify_url': spotify_album['external_urls']['spotify'],
+                'uri': spotify_album['uri']})
+
+        if was_created:
+            saved_artists = []
+            for album_artist in spotify_album['artists']:
+                artist_id = album_artist['id']
+                artist = self.spotify_client.client.artist(artist_id)
+                saved_artist = self.save_artist(artist)
+                saved_artists.append(saved_artist)
+            # Set the artists to the album
+            saved_album.artists = saved_artist
+            saved_album.save()
+
+            saved_genres = self.save_genres(spotify_album['genres'])
+            saved_album.genres = saved_genres
+            saved_album.save()
+            self.logger.log_db_operation(self.logger.DBOperation.CREATE, saved_album)
+        return saved_album
+
+
+class SaveTrackMixin(SaveAlbumMixin, SaveArtistMixin):
+    def __init__(self):
+        from bot.logger import LoggerMixin
+        self.logger = LoggerMixin()
+        self.spotify_client = SpotifyClient()
+
+    def save_track(self, spotify_track):
+        album_id = spotify_track['album']['id']
+        album = self.spotify_client.client.album(album_id)
+        saved_album = self.save_album(album)
+
+        # Save the track (with the album)
+        saved_track, was_created = Track.get_or_create(
+            id=spotify_track['id'],
+            defaults={
+                'name': spotify_track['name'],
+                'track_number ': spotify_track['track_number'],
+                'duration_ms ': spotify_track['duration_ms'],
+                'explicit': spotify_track['explicit'],
+                'popularity ': spotify_track['popularity'],
+                'href': spotify_track['href'],
+                'spotify_url': spotify_track['external_urls']['spotify'],
+                'preview_url ': spotify_track['preview_url'],
+                'uri': spotify_track['uri'],
+                'album': saved_album})
+
+        if was_created:
+            saved_artists = []
+            for track_artist in spotify_track['artists']:
+                artist_id = track_artist['id']
+                artist = self.spotify_client.client.artist(artist_id)
+                saved_artist = self.save_artist(artist)
+                saved_artists.append(saved_artist)
+            # Set the artists to the album
+            saved_track.artists = saved_artists
+            saved_track.save()
+            self.logger.log_db_operation(self.logger.DBOperation.CREATE, saved_track)
+        return saved_track

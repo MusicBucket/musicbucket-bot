@@ -16,15 +16,7 @@ CLIENT_ID = getenv('SPOTIFY_CLIENT_ID')
 CLIENT_SECRET = getenv('SPOTIFY_CLIENT_SECRET')
 
 
-class SpotifyClient:
-    RECOMMENDATIONS_NUMBER = 10
-    MAX_RECOMMENDATIONS_SEEDS = 5
-
-    def __init__(self):
-        client_credentials_manager = SpotifyClientCredentials(client_id=CLIENT_ID, client_secret=CLIENT_SECRET)
-        self.client = spotipy.Spotify(
-            client_credentials_manager=client_credentials_manager)
-
+class SpotifyUrlMixin:
     @staticmethod
     def get_link_type(url):
         """Resolves the Spotify link type"""
@@ -52,6 +44,16 @@ class SpotifyClient:
         """Check if a message contains a Spotify Link"""
         return 'open.spotify.com' in url
 
+
+class SpotifyClient(SpotifyUrlMixin):
+    RECOMMENDATIONS_NUMBER = 10
+    MAX_RECOMMENDATIONS_SEEDS = 5
+
+    def __init__(self):
+        client_credentials_manager = SpotifyClientCredentials(client_id=CLIENT_ID, client_secret=CLIENT_SECRET)
+        self.client = spotipy.Spotify(
+            client_credentials_manager=client_credentials_manager)
+
     def search_link(self, query, entity_type):
         """
         Searches for a list of coincidences in Spotify
@@ -70,7 +72,7 @@ class SpotifyClient:
 
         return search_result
 
-    def get_link_info(self, url, link_type):
+    def get_url_info(self, url, link_type):
         """
         Resolves the name and the genre of the artist/album/track from a link
         Artist: 'spotify:artist:id'
