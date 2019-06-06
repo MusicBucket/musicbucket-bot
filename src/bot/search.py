@@ -1,9 +1,12 @@
+import logging
+
 from telegram import InlineQueryResultArticle, InputTextMessageContent
 
 from bot.logger import LoggerMixin
 from bot.music.music import EntityType
 from bot.music.spotify import SpotifyClient
-from bot.responser import Responser
+
+log = logging.getLogger(__name__)
 
 
 class SearchInline(LoggerMixin):
@@ -13,7 +16,6 @@ class SearchInline(LoggerMixin):
         self.bot = bot
         self.update = update
         self.spotify_client = SpotifyClient()
-        self.responser = Responser(self.bot, self.update)
         self._perform_search()
 
     def _perform_search(self):
@@ -28,7 +30,10 @@ class SearchInline(LoggerMixin):
         if len(query) >= 3:
             search_results = self.spotify_client.search_link(query, entity_type)
             results = self._build_results(search_results, entity_type)
-        self.responser.show_search_results(results)
+        self._show_search_results(results)
+
+    def _show_search_results(self, results):
+        self.update.inline_query.answer(results)
 
     @staticmethod
     def _build_results(search_results, entity_type):

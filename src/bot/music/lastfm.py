@@ -4,9 +4,9 @@ from os import getenv
 import pylast
 from dotenv import load_dotenv
 
-load_dotenv()
+log = logging.getLogger(__name__)
 
-logger = logging.getLogger(__name__)
+load_dotenv()
 
 API_KEY = getenv('LAST_FM_API_KEY')
 API_SECRET = getenv('LAST_FM_SHARED_SECRET')

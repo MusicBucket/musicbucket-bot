@@ -3,9 +3,9 @@ import logging
 import musicbrainzngs
 from dotenv import load_dotenv
 
-load_dotenv()
+log = logging.getLogger(__name__)
 
-logger = logging.getLogger(__name__)
+load_dotenv()
 
 
 class MusicBrainzClient:

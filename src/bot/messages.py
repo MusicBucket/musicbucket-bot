@@ -1,10 +1,15 @@
-import datetime
+import logging
 import re
 
+from emoji import emojize
+
 from bot.logger import LoggerMixin
-from bot.models import SaveChatMixin, SaveUserMixin, Link
+from bot.models import Link, CreateOrUpdateMixin
 from bot.music.music import LinkType
 from bot.music.spotify import SpotifyUrlMixin, SpotifyClient
+from bot.reply import ReplyMixin, ReplyType
+
+log = logging.getLogger(__name__)
 
 
 class MessageProcessor:
@@ -17,7 +22,7 @@ class MessageProcessor:
             url_processor.process()
 
 
-class UrlProcessor(LoggerMixin, SpotifyUrlMixin, SaveChatMixin, SaveUserMixin):
+class UrlProcessor(ReplyMixin, LoggerMixin, SpotifyUrlMixin, CreateOrUpdateMixin):
     def __init__(self, bot, update, url):
         self.bot = bot
         self.update = update
@@ -31,8 +36,8 @@ class UrlProcessor(LoggerMixin, SpotifyUrlMixin, SaveChatMixin, SaveUserMixin):
         if is_valid and link_type:
             cleaned_url = self.clean_url(self.url)
             entity_id = self.get_entity_id_from_url(self.url)
-            user = self.save_user()
-            chat = self.save_chat()
+            user = self.save_user(self.update)
+            chat = self.save_chat(self.update)
             link = Link(
                 url=cleaned_url,
                 link_type=link_type.value,
@@ -40,53 +45,53 @@ class UrlProcessor(LoggerMixin, SpotifyUrlMixin, SaveChatMixin, SaveUserMixin):
                 chat=chat
             )
 
+            spotify_track = None
             if link_type == LinkType.ARTIST:
                 spotify_artist = self.spotify_client.client.artist(entity_id)
-                artist = self._save_artist(spotify_artist)
+                artist = self.save_artist(spotify_artist)
                 spotify_track = self.spotify_client.get_artist_top_track(artist)
                 link.artist = artist
             elif link_type == LinkType.ALBUM:
                 spotify_album = self.spotify_client.client.album(entity_id)
-                album = self._save_album(spotify_album)
+                album = self.save_album(spotify_album)
                 spotify_track = self.spotify_client.get_album_first_track(album)
                 link.album = album
             elif link_type == LinkType.TRACK:
                 spotify_track = self.spotify_client.client.track(entity_id)
-                track = self._save_track(spotify_track)
+                track = self.save_track(spotify_track)
                 link.track = track
-            link, updated = self._save_link(link)
+            link, updated = self.save_link(link)
 
-            self.responser.reply_save_link(link, spotify_track, updated)
+            return self._build_message(link, spotify_track, updated)
 
-    def _save_link(self, link):
-        """Update the link if it exists for a chat, create if it doesn't exist"""
-        updated = False
-        update_user = link.user
-        existent_link = Link.get_or_none((Link.url == link.url) & (Link.chat == link.chat))
-        if existent_link is not None:
-            link = existent_link
-            link.apply_update(update_user)
-            link.save()
-            updated = True
-            self.log_db_operation(self.DBOperation.UPDATE, link)
+    def _build_message(self, link, spotify_track, updated):
+        msg = '<strong>{}: </strong>'.format(
+            'Saved' if not updated else 'Updated')
+        genre_names = [g.name for g in link.genres]
+        genres = ', '.join(genre_names)
+
+        if link.link_type == LinkType.ARTIST.value:
+            msg += '{} <strong>{}</strong>\n'.format(emojize(':busts_in_silhouette:', use_aliases=True),
+                                                     link.artist.name)
+        elif link.link_type == LinkType.ALBUM.value:
+            msg += '{} <strong>{}</strong> - <strong>{}</strong>\n'.format(emojize(':cd:', use_aliases=True),
+                                                                           link.album.artists.first().name,
+                                                                           link.album.name)
+        elif link.link_type == LinkType.TRACK.value:
+            msg += '{} {} by <strong>{}</strong>\n'.format(emojize(':musical_note:', use_aliases=True),
+                                                           link.track.name,
+                                                           link.track.artists.first().name)
+        msg += '<strong>Genres:</strong> {}'.format(genres if len(genres) > 0 else 'N/A')
+
+        track_preview_url = spotify_track.get('preview_url', None)
+        if track_preview_url:
+            performer = spotify_track['artists'][0].get('name', 'unknown')
+            title = spotify_track.get('name', 'unknown')
+            self.reply(bot=self.bot, update=self.update, message=msg, reply_type=ReplyType.AUDIO,
+                       audio=track_preview_url, title=title, performer=performer
+                       )
         else:
-            link.created_at = datetime.datetime.now()
-            link.save()
-            self.log_db_operation(self.DBOperation.CREATE, link)
-
-        return link, updated
-
-    def _save_artist(self):
-        pass
-
-    def _save_album(self):
-        pass
-
-    def _save_track(self):
-        pass
-
-    def _save_genres(self):
-        pass
+            self.reply(self.bot, self.update, msg)
 
     @staticmethod
     def extract_url_from_message(text):

@@ -1,3 +1,4 @@
+import logging
 import datetime
 
 from peewee import Model, CharField, DateTimeField, IntegerField, ForeignKeyField, CompositeKey, ManyToManyField, \
@@ -5,7 +6,8 @@ from peewee import Model, CharField, DateTimeField, IntegerField, ForeignKeyFiel
 
 from bot.db import db
 from bot.music.music import StreamingServiceType, LinkType
-from bot.music.spotify import SpotifyClient
+
+log = logging.getLogger(__name__)
 
 
 class BaseModel(Model):
@@ -148,10 +150,28 @@ class LastFMUsername(BaseModel):
     username = CharField(unique=True)
 
 
-class SaveChatMixin:
-    def __init__(self):
-        from bot.logger import LoggerMixin
-        self.logger = LoggerMixin()
+class CreateOrUpdateMixin:
+    """
+    TODO: Replace get_or_create for insert_or_replace or equivalent to create_or_update
+    """
+
+    def save_link(self, link):
+        """Update the link if it exists for a chat, create if it doesn't exist"""
+        updated = False
+        existent_link = Link.get_or_none((Link.url == link.url) & (Link.chat == link.chat))
+        if existent_link:
+            update_user = link.user
+            link = existent_link
+            link.apply_update(update_user)
+            link.save()
+            updated = True
+            self.log_db_operation(self.DBOperation.UPDATE, link)
+        else:
+            link.created_at = datetime.datetime.now()
+            link.save(force_insert=True)
+            self.log_db_operation(self.DBOperation.CREATE, link)
+
+        return link, updated
 
     def save_chat(self, update):
         chat, was_created = Chat.get_or_create(
@@ -160,14 +180,8 @@ class SaveChatMixin:
                 'name': update.message.chat.title or update.message.chat.username or update.message.chat.first_name
             })
         if was_created:
-            self.logger.log_db_operation(self.logger.DBOperation.CREATE, chat)
+            self.log_db_operation(self.DBOperation.CREATE, chat)
         return chat
-
-
-class SaveUserMixin:
-    def __init__(self):
-        from bot.logger import LoggerMixin
-        self.logger = LoggerMixin()
 
     def save_user(self, update):
         user, was_created = User.get_or_create(
@@ -176,14 +190,8 @@ class SaveUserMixin:
                 'username': update.message.from_user.username,
                 'first_name': update.message.from_user.first_name})
         if was_created:
-            self.logger.log_db_operation(self.logger.DBOperation.CREATE, user)
+            self.log_db_operation(self.DBOperation.CREATE, user)
         return user
-
-
-class SaveGenresMixin:
-    def __init__(self):
-        from bot.logger import LoggerMixin
-        self.logger = LoggerMixin()
 
     def save_genres(self, genres):
         saved_genres = []
@@ -191,14 +199,8 @@ class SaveGenresMixin:
             saved_genre, was_created = Genre.get_or_create(name=genre)
             saved_genres.append(saved_genre)
             if was_created:
-                self.logger.log_db_operation(self.logger.DBOperation.CREATE, saved_genre)
+                self.log_db_operation(self.DBOperation.CREATE, saved_genre)
         return saved_genres
-
-
-class SaveArtistMixin(SaveGenresMixin):
-    def __init__(self):
-        from bot.logger import LoggerMixin
-        self.logger = LoggerMixin()
 
     def save_artist(self, spotify_artist):
         image = spotify_artist['images'][0]['url'] if len(spotify_artist['images']) > 0 else ''
@@ -218,15 +220,8 @@ class SaveArtistMixin(SaveGenresMixin):
             saved_genres = self.save_genres(spotify_artist['genres'])
             saved_artist.genres = saved_genres
             saved_artist.save()
-            self.logger.log_db_operation(self.logger.DBOperation.CREATE, saved_artist)
+            self.log_db_operation(self.DBOperation.CREATE, saved_artist)
         return saved_artist
-
-
-class SaveAlbumMixin(SaveArtistMixin):
-    def __init__(self):
-        from bot.logger import LoggerMixin
-        self.logger = LoggerMixin()
-        self.spotify_client = SpotifyClient()
 
     def save_album(self, spotify_album):
         image = spotify_album['images'][0]['url'] if len(spotify_album['images']) > 0 else ''
@@ -256,15 +251,8 @@ class SaveAlbumMixin(SaveArtistMixin):
             saved_genres = self.save_genres(spotify_album['genres'])
             saved_album.genres = saved_genres
             saved_album.save()
-            self.logger.log_db_operation(self.logger.DBOperation.CREATE, saved_album)
+            self.log_db_operation(self.DBOperation.CREATE, saved_album)
         return saved_album
-
-
-class SaveTrackMixin(SaveAlbumMixin, SaveArtistMixin):
-    def __init__(self):
-        from bot.logger import LoggerMixin
-        self.logger = LoggerMixin()
-        self.spotify_client = SpotifyClient()
 
     def save_track(self, spotify_track):
         album_id = spotify_track['album']['id']
@@ -296,5 +284,5 @@ class SaveTrackMixin(SaveAlbumMixin, SaveArtistMixin):
             # Set the artists to the album
             saved_track.artists = saved_artists
             saved_track.save()
-            self.logger.log_db_operation(self.logger.DBOperation.CREATE, saved_track)
+            self.log_db_operation(self.DBOperation.CREATE, saved_track)
         return saved_track

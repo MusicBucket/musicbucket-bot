@@ -7,10 +7,10 @@ from spotipy.oauth2 import SpotifyClientCredentials
 
 from bot.music.music import LinkType, LinkInfo, EntityType
 
+log = logging.getLogger(__name__)
+
 # Spotify client init
 load_dotenv()
-
-logger = logging.getLogger(__name__)
 
 CLIENT_ID = getenv('SPOTIFY_CLIENT_ID')
 CLIENT_SECRET = getenv('SPOTIFY_CLIENT_SECRET')

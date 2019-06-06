@@ -3,17 +3,18 @@ import logging
 import random
 from collections import defaultdict
 
+from emoji import emojize
 from peewee import fn, SQL
 
 from bot.logger import LoggerMixin
 from bot.messages import UrlProcessor
-from bot.models import SaveChatMixin, SaveUserMixin, Chat, Link, Album, LastFMUsername, User
+from bot.models import Chat, Link, Album, LastFMUsername, User, CreateOrUpdateMixin
 from bot.music.lastfm import LastFMClient
 from bot.music.music import LinkType, EntityType
 from bot.music.spotify import SpotifyClient
-from bot.responser import Responser
+from bot.reply import ReplyMixin
 
-logger = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
 
 
 class CommandFactory:
@@ -36,7 +37,7 @@ class CommandFactory:
 
     @staticmethod
     def run_now_playing_command(bot, update):
-        command = RecommendationsCommand(bot, update)
+        command = NowPlayingCommand(bot, update)
         command.run()
 
     @staticmethod
@@ -50,7 +51,7 @@ class CommandFactory:
         command.run()
 
 
-class Command(LoggerMixin):
+class Command(ReplyMixin, LoggerMixin):
     COMMAND = None
 
     def __init__(self, bot, update, args=[]):
@@ -58,8 +59,12 @@ class Command(LoggerMixin):
         self.update = update
         self.args = args
 
+    def get_response(self):
+        return ''
+
     def run(self):
         self.log_command(self.COMMAND, self.args, self.update)
+        self.reply(self.bot, self.update, self.get_response())
 
 
 class MusicCommand(Command):
@@ -72,20 +77,44 @@ class MusicCommand(Command):
     DAYS = 7
     LAST_WEEK = datetime.datetime.now() - datetime.timedelta(days=DAYS)
 
-    def __init__(self, bot, update, args=[]):
-        super().__init__(bot, update, args)
-        self.responser = Responser(self.bot, self.update)
-        self.last_week_links = defaultdict(list)
-
-    def run(self):
-        # TODO: Test si el self.__class__ de super duu el nom de la classe fill o el de la pare
-        super().run()
+    def get_response(self):
         if len(self.args) > 0:
             links = self._get_links_from_user()
         else:
             links = self._get_links()
-        self.last_week_links = self._group_links_by_user(links)
-        self.responser.reply_music(self.last_week_links)
+        last_week_links = self._group_links_by_user(links)
+        return self._build_message(last_week_links)
+
+    @staticmethod
+    def _build_message(last_week_links):
+        msg = '<strong>Music from the last week:</strong> \n'
+        for user, links in last_week_links.items():
+            msg += '- {} <strong>{}:</strong>\n'.format(emojize(':baby:', use_aliases=True),
+                                                        user.username or user.first_name)
+            for link in links:
+                if link.link_type == LinkType.ARTIST.value:
+                    msg += '    {} <a href="{}">{}</a> {}\n'.format(
+                        emojize(':busts_in_silhouette:', use_aliases=True),
+                        link.url,
+                        link.artist.name,
+                        '({})'.format(link.genres[0]) if len(link.genres) > 0 is not None else '')
+                elif link.link_type == LinkType.ALBUM.value:
+                    msg += '    {} <a href="{}">{} - {}</a> {}\n'.format(
+                        emojize(':cd:', use_aliases=True),
+                        link.url,
+                        link.album.get_first_artist().name if link.album.get_first_artist() else '',
+                        link.album.name,
+                        '({})'.format(link.genres[0]) if len(link.genres) > 0 is not None else '')
+                elif link.link_type == LinkType.TRACK.value:
+                    msg += '    {} <a href="{}">{} by {}</a> {}\n'.format(
+                        emojize(':musical_note:', use_aliases=True),
+                        link.url,
+                        link.track.name,
+                        link.track.artists.first().name if link.track.get_first_artist() else '',
+                        '({})'.format(link.genres[0]) if len(
+                            link.genres) > 0 is not None else '')
+            msg += '\n'
+        return msg
 
     def _get_links(self):
         links = Link.select() \
@@ -106,10 +135,12 @@ class MusicCommand(Command):
             .order_by(Link.updated_at.asc(), Link.created_at.asc())
         return links
 
-    def _group_links_by_user(self, links):
+    @staticmethod
+    def _group_links_by_user(links):
+        last_week_links = defaultdict(list)
         for link in links:
-            self.last_week_links[link.user].append(link)
-        return dict(self.last_week_links)
+            last_week_links[link.user].append(link)
+        return dict(last_week_links)
 
 
 class MusicFromBeginningCommand(Command):
@@ -119,19 +150,60 @@ class MusicFromBeginningCommand(Command):
     """
     COMMAND = 'music_from_beginning'
 
-    def __init__(self, bot, update, args=[]):
-        super().__init__(bot, update, args)
-        self.responser = Responser(self.bot, self.update)
-        self.all_time_links = defaultdict(list)
-
-    def run(self):
-        super().run()
+    def get_response(self):
         if len(self.args) > 0:
             links = self._get_links_from_user()
-            self.all_time_links = self._group_links_by_user(links)
-            self.responser.reply_music_from_beginning(self.all_time_links)
+            all_time_links = self._group_links_by_user(links)
+            return self._build_message(all_time_links)
         else:
-            self.responser.error_music_from_beginning_no_username()
+            msg = 'Command usage /music_from_beginning @username'
+            return msg
+
+    @staticmethod
+    def _build_message(all_time_links):
+        msg = '<strong>Music from the beginning of time:</strong> \n'
+        for user, links in all_time_links.items():
+            msg += '- {} <strong>{}:</strong>\n'.format(emojize(':baby:', use_aliases=True),
+                                                        user.username or user.first_name)
+            for link in links:
+                if link.link_type == LinkType.ARTIST.value:
+                    msg += '    {}  {} <a href="{}">{}</a> {}\n'.format(
+                        emojize(':busts_in_silhouette:', use_aliases=True),
+                        '[{}]'.format(link.created_at.strftime(
+                            "%Y/%m/%d"),
+                            ' | Updated @ {} by {}'.format(link.updated_at.strftime(
+                                "%Y/%m/%d"),
+                                link.last_update_user.username or link.last_update_user.first_name or '') if link.last_update_user else ''),
+                        link.url,
+                        link.artist.name,
+                        '({})'.format(link.genres[0]) if len(link.genres) > 0 is not None else '')
+                elif link.link_type == LinkType.ALBUM.value:
+                    msg += '    {}  {} <a href="{}">{} - {}</a> {}\n'.format(
+                        emojize(':cd:', use_aliases=True),
+                        '[{}{}]'.format(link.created_at.strftime(
+                            "%Y/%m/%d"),
+                            ' | Updated @ {} by {}'.format(link.updated_at.strftime(
+                                "%Y/%m/%d"),
+                                link.last_update_user.username or link.last_update_user.first_name or '') if link.last_update_user else ''),
+                        link.url,
+                        link.album.artists[0].name,
+                        link.album.name,
+                        '({})'.format(link.genres[0]) if len(link.genres) > 0 is not None else '')
+                elif link.link_type == LinkType.TRACK.value:
+                    msg += '    {}  {} <a href="{}">{} by {}</a> {}\n'.format(
+                        emojize(':musical_note:', use_aliases=True),
+                        '[{}{}]'.format(link.created_at.strftime(
+                            "%Y/%m/%d"),
+                            ' | Updated @ {} by {}'.format(link.updated_at.strftime(
+                                "%Y/%m/%d"),
+                                link.last_update_user.username or link.last_update_user.first_name or '') if link.last_update_user else ''),
+                        link.url,
+                        link.track.name,
+                        link.track.artists[0].name,
+                        '({})'.format(link.genres[0]) if len(
+                            link.genres) > 0 is not None else '')
+            msg += '\n'
+        return msg
 
     def _get_links_from_user(self):
         username = self.args[0]
@@ -143,10 +215,12 @@ class MusicFromBeginningCommand(Command):
             .order_by(Link.updated_at.asc(), Link.created_at.asc())
         return links
 
-    def _group_links_by_user(self, links):
+    @staticmethod
+    def _group_links_by_user(links):
+        all_time_links = defaultdict(list)
         for link in links:
-            self.all_time_links[link.user].append(link)
-        return dict(self.all_time_links)
+            all_time_links[link.user].append(link)
+        return dict(all_time_links)
 
 
 class RecommendationsCommand(Command):
@@ -158,24 +232,20 @@ class RecommendationsCommand(Command):
     DAYS = 7
     LAST_WEEK = datetime.datetime.now() - datetime.timedelta(days=DAYS)
 
-    def __init__(self, bot, update, args=[]):
-        super().__init__(bot, update, args)
+    def __init__(self, bot, update):
+        super().__init__(bot, update)
         self.spotify_client = SpotifyClient()
-        self.responser = Responser(self.bot, self.update)
-        self.artist_seeds = []
-        self.track_recommendations = []
 
-    def run(self):
-        super().run()
-
+    def get_response(self):
+        track_recommendations = {}
+        artist_seeds = []
         album_seeds = self._get_album_seeds()
         if len(album_seeds) > 0:
             if len(album_seeds) > SpotifyClient.MAX_RECOMMENDATIONS_SEEDS:
                 album_seeds = self._get_random_album_seeds(album_seeds)
-            self.artist_seeds = [album.artists.first() for album in album_seeds]
-            self.track_recommendations = self.spotify_client.get_recommendations(self.artist_seeds)
-
-        self.responser.reply_recommendations(self.track_recommendations, self.artist_seeds)
+            artist_seeds = [album.artists.first() for album in album_seeds]
+            track_recommendations = self.spotify_client.get_recommendations(artist_seeds)
+        return self._build_message(track_recommendations, artist_seeds)
 
     def _get_album_seeds(self):
         album_seeds = Album.select() \
@@ -186,6 +256,23 @@ class RecommendationsCommand(Command):
             .where(Link.link_type == LinkType.ALBUM.value) \
             .order_by(Link.updated_at.asc(), Link.created_at.asc())
         return album_seeds
+
+    @staticmethod
+    def _build_message(track_recommendations, artist_seeds):
+        if len(track_recommendations.get('tracks', [])) == 0 or len(artist_seeds) == 0:
+            msg = 'There are not recommendations for this week yet. Send some music!'
+            return msg
+
+        artists_names = [artist.name for artist in artist_seeds]
+        msg = 'Track recommendations of the week, based on the artists: <strong>{}</strong>\n'.format(
+            '</strong>, <strong>'.join(artists_names))
+        for track in track_recommendations['tracks']:
+            msg += '{} <a href="{}">{}</a> by <strong>{}</strong>\n'.format(
+                emojize(':musical_note:', use_aliases=True),
+                track['external_urls']['spotify'],
+                track['name'],
+                track['artists'][0]['name'])
+        return msg
 
     @staticmethod
     def _get_random_album_seeds(album_seeds):
@@ -199,31 +286,54 @@ class NowPlayingCommand(Command):
     """
     COMMAND = 'np'
 
-    def __init__(self, bot, update, args=[]):
-        super().__init__(bot, update, args)
+    def __init__(self, bot, update):
+        super().__init__(bot, update)
         self.lastfm_client = LastFMClient()
         self.spotify_client = SpotifyClient()
-        self.responser = Responser(self.bot, self.update)
-        self.username = None
-        self.now_playing = None
 
-    def run(self):
-        super().run()
-        from_user = self.update.from_user
+    def get_response(self):
+        now_playing = None
+        username = None
+        from_user = self.update.message.from_user
         lastfm_username = LastFMUsername.get_or_none(from_user.id)
         if lastfm_username:
-            self.username = lastfm_username.username
-            self.now_playing = self.lastfm_client.now_playing(self.username)
-        self.responser.reply_now_playing(self.now_playing, self.username)
+            username = lastfm_username.username
+            now_playing = self.lastfm_client.now_playing(username)
+        msg = self._build_message(now_playing, username)
 
-        if self.now_playing:
-            url_candidate = self._search_for_url_candidate()
+        if now_playing:
+            url_candidate = self._search_for_url_candidate(now_playing)
             if url_candidate:
                 self._save_link(url_candidate)
+        return msg
 
-    def _search_for_url_candidate(self):
-        album = self.now_playing.get('album')
-        track = self.now_playing.get('track')
+    @staticmethod
+    def _build_message(now_playing, username):
+        if not username:
+            return f'There is no Last.fm username for your user. Please set your username with:\n' \
+                f'<i>/lastfmset username</i>'
+        if not now_playing:
+            return f'<b>{username}</b> is not currently playing music'
+
+        artist_emoji = emojize(':busts_in_silhouette:', use_aliases=True)
+        album_emoji = emojize(':cd:', use_aliases=True)
+        track_emoji = emojize(':musical_note:', use_aliases=True)
+        artist = now_playing.get('artist')
+        album = now_playing.get('album')
+        track = now_playing.get('track')
+        # cover = now_playing.get('cover')
+
+        msg = f"<b>{username}</b>'s now playing:\n"
+        msg += f"{track_emoji} {track.title}\n"
+        if album:
+            msg += f"{album_emoji} {album.title}\n"
+        if artist:
+            msg += f"{artist_emoji} {artist}\n"
+        return msg
+
+    def _search_for_url_candidate(self, now_playing):
+        album = now_playing.get('album')
+        track = now_playing.get('track')
         if album:
             results = self.spotify_client.search_link(album, EntityType.ALBUM.value)
         else:
@@ -238,30 +348,24 @@ class NowPlayingCommand(Command):
         url_processor.process()
 
 
-class LastfmSetCommand(Command, SaveChatMixin, SaveUserMixin):
+class LastfmSetCommand(Command, CreateOrUpdateMixin):
     """
     Command /lastfmset
     Sets the given Last.fm username to the current user
     """
     COMMAND = 'lastfmset'
 
-    def __init__(self, bot, update, args=[]):
-        super().__init__(bot, update, args)
-        self.responser = Responser(self.bot, self.update)
-        self.lastfm_username = None
-
-    def run(self):
-        super().run()
-
-        if len(self.args) == 0:
-            self.responser.error_lastfmset_username_no_username()
-            return
-
+    def get_response(self):
         self.save_chat(self.update)
         user = self.save_user(self.update)
 
-        self.lastfm_username = self._set_lastfm_username(user)
-        self.responser.reply_lastfmset(self.lastfm_username)
+        lastfm_username = self._set_lastfm_username(user)
+        return self._build_message(lastfm_username)
+
+    def _build_message(self, lastfm_username):
+        if len(self.args) == 0:
+            return 'Command usage /lastfmset username'
+        return f"<b>{lastfm_username}</b>'s Last.fm username set correctly"
 
     def _set_lastfm_username(self, user):
         username = self.args[0]
@@ -286,14 +390,18 @@ class StatsCommand(Command):
     """
     COMMAND = 'stats'
 
-    def __init__(self, bot, update, args=[]):
-        super().__init__(bot, update, args)
-        self.responser = Responser(self.bot, self.update)
-
-    def run(self):
-        super().run()
+    def get_response(self):
         stats_by_user = self._get_stats_by_user()
-        self.responser.reply_stats(stats_by_user)
+        return self._build_message(stats_by_user)
+
+    @staticmethod
+    def _build_message(stats_by_user):
+        msg = '<strong>Links sent by the users from the beginning in this chat:</strong> \n'
+        for user in stats_by_user:
+            msg += '- {} <strong>{}:</strong> {}\n'.format(emojize(':baby:', use_aliases=True),
+                                                           user.username or user.first_name,
+                                                           user.links)
+        return msg
 
     def _get_stats_by_user(self):
         stats_by_user = User.select(User, fn.Count(Link.url).alias('links')) \

@@ -1,5 +1,7 @@
+import logging
 from enum import Enum
 
+log = logging.getLogger(__name__)
 
 class EntityType(Enum):
     """Streaming service entity types"""
