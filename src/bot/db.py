@@ -4,4 +4,4 @@ from peewee import SqliteDatabase
 
 log = logging.getLogger(__name__)
 
-db = SqliteDatabase('../../db.sqlite', pragmas={'foreign_keys': 1})
+db = SqliteDatabase('db.sqlite', pragmas={'foreign_keys': 1})
