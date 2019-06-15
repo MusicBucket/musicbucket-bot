@@ -363,11 +363,14 @@ class LastfmSetCommand(Command, CreateOrUpdateMixin):
         return self._build_message(lastfm_username)
 
     def _build_message(self, lastfm_username):
-        if len(self.args) == 0 or self.args == '':
+        if not lastfm_username:
             return 'Command usage /lastfmset username'
         return f"<b>{lastfm_username}</b>'s Last.fm username set correctly"
 
     def _set_lastfm_username(self, user):
+        if len(self.args) == 0:
+            return None
+
         username = self.args[0]
         username = username.replace('@', '')
 
