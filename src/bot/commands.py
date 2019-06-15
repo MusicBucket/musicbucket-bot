@@ -150,7 +150,7 @@ class MusicFromBeginningCommand(Command):
     COMMAND = 'music_from_beginning'
 
     def get_response(self):
-        if len(self.args) > 0:
+        if self.args:
             links = self._get_links_from_user()
             all_time_links = self._group_links_by_user(links)
             return self._build_message(all_time_links)
@@ -175,7 +175,7 @@ class MusicFromBeginningCommand(Command):
                                 link.last_update_user.username or link.last_update_user.first_name or '') if link.last_update_user else ''),
                         link.url,
                         link.artist.name,
-                        '({})'.format(link.genres[0]) if len(link.genres) > 0 is not None else '')
+                        '({})'.format(link.genres[0]) if link.genres else '')
                 elif link.link_type == LinkType.ALBUM.value:
                     msg += '    {}  {} <a href="{}">{} - {}</a> {}\n'.format(
                         emojize(':cd:', use_aliases=True),
@@ -187,7 +187,7 @@ class MusicFromBeginningCommand(Command):
                         link.url,
                         link.album.artists[0].name,
                         link.album.name,
-                        '({})'.format(link.genres[0]) if len(link.genres) > 0 is not None else '')
+                        '({})'.format(link.genres[0]) if link.genres else '')
                 elif link.link_type == LinkType.TRACK.value:
                     msg += '    {}  {} <a href="{}">{} by {}</a> {}\n'.format(
                         emojize(':musical_note:', use_aliases=True),
@@ -199,8 +199,7 @@ class MusicFromBeginningCommand(Command):
                         link.url,
                         link.track.name,
                         link.track.artists[0].name,
-                        '({})'.format(link.genres[0]) if len(
-                            link.genres) > 0 is not None else '')
+                        '({})'.format(link.genres[0]) if link.genres else '')
             msg += '\n'
         return msg
 
@@ -239,7 +238,7 @@ class RecommendationsCommand(Command):
         track_recommendations = {}
         artist_seeds = []
         album_seeds = self._get_album_seeds()
-        if len(album_seeds) > 0:
+        if album_seeds:
             if len(album_seeds) > SpotifyClient.MAX_RECOMMENDATIONS_SEEDS:
                 album_seeds = self._get_random_album_seeds(album_seeds)
             artist_seeds = [album.artists.first() for album in album_seeds]
@@ -258,7 +257,7 @@ class RecommendationsCommand(Command):
 
     @staticmethod
     def _build_message(track_recommendations, artist_seeds):
-        if len(track_recommendations.get('tracks', [])) == 0 or len(artist_seeds) == 0:
+        if not track_recommendations.get('tracks', []) or not artist_seeds:
             msg = 'There are not recommendations for this week yet. Send some music!'
             return msg
 
@@ -337,7 +336,7 @@ class NowPlayingCommand(Command):
             results = self.spotify_client.search_link(album, EntityType.ALBUM.value)
         else:
             results = self.spotify_client.search_link(track, EntityType.TRACK.value)
-        candidate = results[0] if len(results) > 0 else None
+        candidate = results[0] if results else None
         if candidate:
             return candidate['external_urls']['spotify']
         return None, None
