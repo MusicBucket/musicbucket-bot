@@ -362,7 +362,8 @@ class LastfmSetCommand(Command, CreateOrUpdateMixin):
         lastfm_username = self._set_lastfm_username(user)
         return self._build_message(lastfm_username)
 
-    def _build_message(self, lastfm_username):
+    @staticmethod
+    def _build_message(lastfm_username):
         if not lastfm_username:
             return 'Command usage /lastfmset username'
         return f"<b>{lastfm_username}</b>'s Last.fm username set correctly"
