@@ -369,7 +369,7 @@ class LastfmSetCommand(Command, CreateOrUpdateMixin):
         return f"<b>{lastfm_username}</b>'s Last.fm username set correctly"
 
     def _set_lastfm_username(self, user):
-        if len(self.args) == 0:
+        if not self.args == 0:
             return None
 
         username = self.args[0]
