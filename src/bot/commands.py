@@ -78,7 +78,7 @@ class MusicCommand(Command):
     LAST_WEEK = datetime.datetime.now() - datetime.timedelta(days=DAYS)
 
     def get_response(self):
-        if len(self.args) > 0:
+        if self.args:
             links = self._get_links_from_user()
         else:
             links = self._get_links()
@@ -97,22 +97,21 @@ class MusicCommand(Command):
                         emojize(':busts_in_silhouette:', use_aliases=True),
                         link.url,
                         link.artist.name,
-                        '({})'.format(link.genres[0]) if len(link.genres) > 0 is not None else '')
+                        '({})'.format(link.genres[0]) if link.genres else '')
                 elif link.link_type == LinkType.ALBUM.value:
                     msg += '    {} <a href="{}">{} - {}</a> {}\n'.format(
                         emojize(':cd:', use_aliases=True),
                         link.url,
                         link.album.get_first_artist().name if link.album.get_first_artist() else '',
                         link.album.name,
-                        '({})'.format(link.genres[0]) if len(link.genres) > 0 is not None else '')
+                        '({})'.format(link.genres[0]) if link.genres else '')
                 elif link.link_type == LinkType.TRACK.value:
                     msg += '    {} <a href="{}">{} by {}</a> {}\n'.format(
                         emojize(':musical_note:', use_aliases=True),
                         link.url,
                         link.track.name,
                         link.track.artists.first().name if link.track.get_first_artist() else '',
-                        '({})'.format(link.genres[0]) if len(
-                            link.genres) > 0 is not None else '')
+                        '({})'.format(link.genres[0]) if link.genres else '')
             msg += '\n'
         return msg
 
