@@ -203,7 +203,7 @@ class CreateOrUpdateMixin:
         return saved_genres
 
     def save_artist(self, spotify_artist):
-        image = spotify_artist['images'][0]['url'] if len(spotify_artist['images']) > 0 else ''
+        image = spotify_artist['images'][0]['url'] if spotify_artist['images'] else ''
 
         saved_artist, was_created = Artist.get_or_create(
             id=spotify_artist['id'],
@@ -224,7 +224,7 @@ class CreateOrUpdateMixin:
         return saved_artist
 
     def save_album(self, spotify_album):
-        image = spotify_album['images'][0]['url'] if len(spotify_album['images']) > 0 else ''
+        image = spotify_album['images'][0]['url'] if spotify_album['images'] else ''
 
         saved_album, was_created = Album.get_or_create(
             id=spotify_album['id'],

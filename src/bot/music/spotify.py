@@ -94,7 +94,7 @@ class SpotifyClient(SpotifyUrlMixin):
             album = self.client.album(uri)
             link_info.album = album['name']
             link_info.artist = album['artists'][0]['name']
-            if len(album['genres']) > 0:
+            if album['genres']:
                 link_info.genres = album['genres']
             else:
                 album_artist = self.client.artist(album['artists'][0]['id'])

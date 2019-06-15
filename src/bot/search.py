@@ -48,11 +48,11 @@ class SearchInline(LoggerMixin):
                 thumb_url = album['images'][0]['url']
                 description = '{} - {}'.format(', '.join(artist['name'] for artist in artists), album['name'])
             elif entity_type == EntityType.ALBUM.value:
-                thumb_url = result['images'][0]['url'] if len(result['images']) > 0 else ''
+                thumb_url = result['images'][0]['url'] if result['images'] else ''
                 artists = result['artists']
                 description = ', '.join(artist['name'] for artist in artists)
             elif entity_type == EntityType.ARTIST.value:
-                thumb_url = result['images'][0]['url'] if len(result['images']) > 0 else ''
+                thumb_url = result['images'][0]['url'] if result['images'] else ''
                 description = ', '.join(result['genres'])
 
             results.append(

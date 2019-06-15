@@ -81,7 +81,7 @@ class UrlProcessor(ReplyMixin, LoggerMixin, SpotifyUrlMixin, CreateOrUpdateMixin
             msg += '{} {} by <strong>{}</strong>\n'.format(emojize(':musical_note:', use_aliases=True),
                                                            link.track.name,
                                                            link.track.artists.first().name)
-        msg += '<strong>Genres:</strong> {}'.format(genres if len(genres) > 0 else 'N/A')
+        msg += '<strong>Genres:</strong> {}'.format(genres if genres else 'N/A')
 
         track_preview_url = spotify_track.get('preview_url', None)
         if track_preview_url:
