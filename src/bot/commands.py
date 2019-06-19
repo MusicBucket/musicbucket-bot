@@ -53,6 +53,7 @@ class CommandFactory:
 
 class Command(ReplyMixin, LoggerMixin):
     COMMAND = None
+    WEB_PAGE_PREVIEW = False
 
     def __init__(self, bot, update, args=[]):
         self.bot = bot
@@ -64,7 +65,8 @@ class Command(ReplyMixin, LoggerMixin):
 
     def run(self):
         self.log_command(self.COMMAND, self.args, self.update)
-        self.reply(self.bot, self.update, self.get_response())
+        self.reply(self.bot, self.update, self.get_response(),
+                   disable_web_page_preview=not self.WEB_PAGE_PREVIEW)
 
 
 class MusicCommand(Command):
@@ -283,6 +285,7 @@ class NowPlayingCommand(Command):
     Shows which track is the user currently playing and saves it as a sent link
     """
     COMMAND = 'np'
+    WEB_PAGE_PREVIEW = True
 
     def __init__(self, bot, update):
         super().__init__(bot, update)
@@ -319,7 +322,7 @@ class NowPlayingCommand(Command):
         artist = now_playing.get('artist')
         album = now_playing.get('album')
         track = now_playing.get('track')
-        # cover = now_playing.get('cover')
+        cover = now_playing.get('cover')
 
         msg = f"<b>{username}</b>'s now playing:\n"
         msg += f"{track_emoji} {track.title}\n"
@@ -327,6 +330,8 @@ class NowPlayingCommand(Command):
             msg += f"{album_emoji} {album.title}\n"
         if artist:
             msg += f"{artist_emoji} {artist}\n"
+        if cover:
+            msg += f"<a href='{cover}'>&#8205;</a>"
         return msg
 
     def _search_for_url_candidate(self, now_playing):

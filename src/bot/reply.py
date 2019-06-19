@@ -16,18 +16,18 @@ class ReplyMixin:
     MAX_RESPONSE_LENGTH = 4096
 
     def reply(self, bot, update, message, reply_type=ReplyType.TEXT, audio=None, title=None, performer=None,
-              image=None):
+              image=None, disable_web_page_preview=False):
         if reply_type == ReplyType.TEXT:
-            self._reply_text(update, message)
+            self._reply_text(update, message, disable_web_page_preview)
         if reply_type == ReplyType.AUDIO:
             self._reply_audio(bot, update, audio, message, performer, title)
         if reply_type == ReplyType.IMAGE:
             self._reply_image(bot, update, image, message)
 
-    def _reply_text(self, update, message):
+    def _reply_text(self, update, message, disable_web_page_preview=True):
         """Replies the message to the original chat splitting the message if necessary"""
         if len(message) <= self.MAX_RESPONSE_LENGTH:
-            update.message.reply_text(message, disable_web_page_preview=True,
+            update.message.reply_text(message, disable_web_page_preview=disable_web_page_preview,
                                       parse_mode=ParseMode.HTML)
             return
 
