@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 
 
 class CommandFactory:
-    """Handles the execution of a command"""
+    """Handles the execution of the commands"""
 
     @staticmethod
     def run_music_command(bot, update, args):
@@ -29,6 +29,12 @@ class CommandFactory:
     def run_music_from_beginning_command(bot, update, args):
         command = MusicFromBeginningCommand(bot, update, args)
         command.run()
+
+    @staticmethod
+    def run_my_music_command(bot, update):
+        if update.message.chat.type != 'group':
+            command = MyMusicCommand(bot, update)
+            command.run()
 
     @staticmethod
     def run_recommendations_command(bot, update):
@@ -99,21 +105,24 @@ class MusicCommand(Command):
                         emojize(':busts_in_silhouette:', use_aliases=True),
                         link.url,
                         link.artist.name,
-                        '({})'.format(link.genres[0]) if link.genres else '')
+                        '({})'.format(link.genres[0]) if link.genres else ''
+                    )
                 elif link.link_type == LinkType.ALBUM.value:
                     msg += '    {} <a href="{}">{} - {}</a> {}\n'.format(
                         emojize(':cd:', use_aliases=True),
                         link.url,
                         link.album.get_first_artist().name if link.album.get_first_artist() else '',
                         link.album.name,
-                        '({})'.format(link.genres[0]) if link.genres else '')
+                        '({})'.format(link.genres[0]) if link.genres else ''
+                    )
                 elif link.link_type == LinkType.TRACK.value:
                     msg += '    {} <a href="{}">{} by {}</a> {}\n'.format(
                         emojize(':musical_note:', use_aliases=True),
                         link.url,
                         link.track.name,
                         link.track.artists.first().name if link.track.get_first_artist() else '',
-                        '({})'.format(link.genres[0]) if link.genres else '')
+                        '({})'.format(link.genres[0]) if link.genres else ''
+                    )
             msg += '\n'
         return msg
 
@@ -164,28 +173,31 @@ class MusicFromBeginningCommand(Command):
     def _build_message(all_time_links):
         msg = '<strong>Music from the beginning of time:</strong> \n'
         for user, links in all_time_links.items():
-            msg += '- {} <strong>{}:</strong>\n'.format(emojize(':baby:', use_aliases=True),
-                                                        user.username or user.first_name)
+            msg += '- {} <strong>{}:</strong>\n'.format(
+                emojize(':baby:', use_aliases=True), user.username or user.first_name
+            )
             for link in links:
                 if link.link_type == LinkType.ARTIST.value:
                     msg += '    {}  {} <a href="{}">{}</a> {}\n'.format(
                         emojize(':busts_in_silhouette:', use_aliases=True),
-                        '[{}]'.format(link.created_at.strftime(
-                            "%Y/%m/%d"),
-                            ' | Updated @ {} by {}'.format(link.updated_at.strftime(
-                                "%Y/%m/%d"),
-                                link.last_update_user.username or link.last_update_user.first_name or '') if link.last_update_user else ''),
+                        '[{}]'.format(
+                            link.created_at.strftime("%Y/%m/%d"), ' | Updated @ {} by {}'.format(
+                                link.updated_at.strftime("%Y/%m/%d"),
+                                link.last_update_user.username or link.last_update_user.first_name or ''
+                            ) if link.last_update_user else ''
+                        ),
                         link.url,
                         link.artist.name,
                         '({})'.format(link.genres[0]) if link.genres else '')
                 elif link.link_type == LinkType.ALBUM.value:
                     msg += '    {}  {} <a href="{}">{} - {}</a> {}\n'.format(
                         emojize(':cd:', use_aliases=True),
-                        '[{}{}]'.format(link.created_at.strftime(
-                            "%Y/%m/%d"),
-                            ' | Updated @ {} by {}'.format(link.updated_at.strftime(
-                                "%Y/%m/%d"),
-                                link.last_update_user.username or link.last_update_user.first_name or '') if link.last_update_user else ''),
+                        '[{}{}]'.format(
+                            link.created_at.strftime("%Y/%m/%d"), ' | Updated @ {} by {}'.format(
+                                link.updated_at.strftime("%Y/%m/%d"),
+                                link.last_update_user.username or link.last_update_user.first_name or ''
+                            ) if link.last_update_user else ''
+                        ),
                         link.url,
                         link.album.artists[0].name,
                         link.album.name,
@@ -193,11 +205,12 @@ class MusicFromBeginningCommand(Command):
                 elif link.link_type == LinkType.TRACK.value:
                     msg += '    {}  {} <a href="{}">{} by {}</a> {}\n'.format(
                         emojize(':musical_note:', use_aliases=True),
-                        '[{}{}]'.format(link.created_at.strftime(
-                            "%Y/%m/%d"),
-                            ' | Updated @ {} by {}'.format(link.updated_at.strftime(
-                                "%Y/%m/%d"),
-                                link.last_update_user.username or link.last_update_user.first_name or '') if link.last_update_user else ''),
+                        '[{}{}]'.format(
+                            link.created_at.strftime("%Y/%m/%d"), ' | Updated @ {} by {}'.format(
+                                link.updated_at.strftime("%Y/%m/%d"),
+                                link.last_update_user.username or link.last_update_user.first_name or ''
+                            ) if link.last_update_user else ''
+                        ),
                         link.url,
                         link.track.name,
                         link.track.artists[0].name,
@@ -221,6 +234,75 @@ class MusicFromBeginningCommand(Command):
         for link in links:
             all_time_links[link.user].append(link)
         return dict(all_time_links)
+
+
+class MyMusicCommand(Command):
+    """
+    Command /mymusic
+    It can only be called from a private conversation
+    Returns a list of the links sent by the caller user in all the chats from the beginning of time
+    """
+    COMMAND = 'mymusic'
+
+    def get_response(self):
+        all_time_links = self._get_all_time_links_from_user()
+        return self._build_message(all_time_links)
+
+    @staticmethod
+    def _build_message(all_time_links):
+        msg = '<strong>Music sent in all your chats from the beginning of time:</strong> \n'
+        for link in all_time_links:
+            if link.link_type == LinkType.ARTIST.value:
+                msg += '    {}  {} <a href="{}">{}</a> {}\n'.format(
+                    emojize(':busts_in_silhouette:', use_aliases=True),
+                    '[{}{}@{}]'.format(
+                        link.created_at.strftime("%Y/%m/%d"), ' | Updated @ {} by {}'.format(
+                            link.updated_at.strftime("%Y/%m/%d"),
+                            link.last_update_user.username or link.last_update_user.first_name or ''
+                        ) if link.last_update_user else '',
+                        link.chat.name
+                    ),
+                    link.url,
+                    link.artist.name,
+                    '({})'.format(link.genres[0]) if link.genres else '')
+            elif link.link_type == LinkType.ALBUM.value:
+                msg += '    {}  {} <a href="{}">{} - {}</a> {}\n'.format(
+                    emojize(':cd:', use_aliases=True),
+                    '[{}{}@{}]'.format(
+                        link.created_at.strftime("%Y/%m/%d"), ' | Updated @ {} by {}'.format(
+                            link.updated_at.strftime("%Y/%m/%d"),
+                            link.last_update_user.username or link.last_update_user.first_name or ''
+                        ) if link.last_update_user else '',
+                        link.chat.name
+                    ),
+                    link.url,
+                    link.album.artists[0].name,
+                    link.album.name,
+                    '({})'.format(link.genres[0]) if link.genres else '')
+            elif link.link_type == LinkType.TRACK.value:
+                msg += '    {}  {} <a href="{}">{} by {}</a> {}\n'.format(
+                    emojize(':musical_note:', use_aliases=True),
+                    '[{}{}@{}]'.format(
+                        link.created_at.strftime("%Y/%m/%d"), ' | Updated @ {} by {}'.format(
+                            link.updated_at.strftime("%Y/%m/%d"),
+                            link.last_update_user.username or link.last_update_user.first_name or ''
+                        ) if link.last_update_user else '',
+                        link.chat.name
+                    ),
+                    link.url,
+                    link.track.name,
+                    link.track.artists[0].name,
+                    '({})'.format(link.genres[0]) if link.genres else '')
+        msg += '\n'
+        return msg
+
+    def _get_all_time_links_from_user(self):
+        links = Link.select() \
+            .join(User, on=(User.id == Link.user)) \
+            .join(Chat, on=(Chat.id == Link.chat)) \
+            .where(User.id == self.update.message.from_user.id) \
+            .order_by(Link.updated_at.asc(), Link.created_at.asc())
+        return links
 
 
 class RecommendationsCommand(Command):

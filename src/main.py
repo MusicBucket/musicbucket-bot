@@ -15,7 +15,7 @@ from bot.search import SearchInline
 load_dotenv()
 
 logging.basicConfig(
-    filename='musicbucket-bot.log',
+    # filename='musicbucket-bot.log',
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -52,6 +52,8 @@ def main():
                                           CommandFactory.run_music_command, pass_args=True))
     dispatcher.add_handler(CommandHandler('music_from_beginning',
                                           CommandFactory.run_music_from_beginning_command, pass_args=True))
+    dispatcher.add_handler(CommandHandler('mymusic',
+                                          CommandFactory.run_my_music_command))
     dispatcher.add_handler(CommandHandler('recommendations', CommandFactory.run_recommendations_command))
     dispatcher.add_handler(CommandHandler('np', CommandFactory.run_now_playing_command))
     dispatcher.add_handler(
