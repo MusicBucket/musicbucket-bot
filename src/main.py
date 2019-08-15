@@ -20,7 +20,7 @@ logging.basicConfig(
     level=logging.INFO)
 log = logging.getLogger(__name__)
 
-i
+
 def _setup_database():
     db.connect()
     db.create_tables(
