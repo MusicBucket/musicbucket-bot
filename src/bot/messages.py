@@ -23,7 +23,7 @@ class MessageProcessor:
 
 
 class UrlProcessor(ReplyMixin, LoggerMixin, SpotifyUrlMixin, CreateOrUpdateMixin):
-    def __init__(self, bot, update, url, command):
+    def __init__(self, bot, update, url, command=None):
         self.bot = bot
         self.update = update
         self.url = url
