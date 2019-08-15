@@ -23,10 +23,11 @@ class MessageProcessor:
 
 
 class UrlProcessor(ReplyMixin, LoggerMixin, SpotifyUrlMixin, CreateOrUpdateMixin):
-    def __init__(self, bot, update, url):
+    def __init__(self, bot, update, url, command):
         self.bot = bot
         self.update = update
         self.url = url
+        self.command = command
         self.spotify_client = SpotifyClient()
 
     def process(self):
@@ -65,6 +66,7 @@ class UrlProcessor(ReplyMixin, LoggerMixin, SpotifyUrlMixin, CreateOrUpdateMixin
             return self._build_message(link, spotify_track, updated)
 
     def _build_message(self, link, spotify_track, updated):
+        from bot.commands import NowPlayingCommand
         msg = '<strong>{}: </strong>'.format(
             'Saved' if not updated else 'Updated')
         genre_names = [g.name for g in link.genres]
@@ -81,6 +83,9 @@ class UrlProcessor(ReplyMixin, LoggerMixin, SpotifyUrlMixin, CreateOrUpdateMixin
             msg += '{} {} by <strong>{}</strong>\n'.format(emojize(':musical_note:', use_aliases=True),
                                                            link.track.name,
                                                            link.track.artists.first().name)
+        if isinstance(self.command, NowPlayingCommand):
+            msg += f'{link.url} \n'
+
         msg += '<strong>Genres:</strong> {}'.format(genres if genres else 'N/A')
 
         track_preview_url = spotify_track.get('preview_url', None)

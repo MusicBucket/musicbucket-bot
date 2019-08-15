@@ -385,7 +385,7 @@ class NowPlayingCommand(Command):
         msg = self._build_message(now_playing, username)
 
         if now_playing:
-            url_candidate = self._search_for_url_candidate(now_playing)
+            url_candidate = self._search_for_spotify_url_candidate(now_playing)
             if url_candidate:
                 self._save_link(url_candidate)
         return msg
@@ -416,7 +416,7 @@ class NowPlayingCommand(Command):
             msg += f"<a href='{cover}'>&#8205;</a>"
         return msg
 
-    def _search_for_url_candidate(self, now_playing):
+    def _search_for_spotify_url_candidate(self, now_playing):
         album = now_playing.get('album')
         track = now_playing.get('track')
         if album:
@@ -426,10 +426,10 @@ class NowPlayingCommand(Command):
         candidate = results[0] if results else None
         if candidate:
             return candidate['external_urls']['spotify']
-        return None, None
+        return
 
     def _save_link(self, url):
-        url_processor = UrlProcessor(self.bot, self.update, url)
+        url_processor = UrlProcessor(self.bot, self.update, url, self)
         url_processor.process()
 
 
