@@ -12,10 +12,6 @@ a chat and shows them by request, with the related info:
 It also integrates with **Last.fm** to retrieve information about your
 user like **Now Playing**.
 
-Currently supported music streaming services:
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
--  [x] Spotify
 
 Commands
 ~~~~~~~~
@@ -24,6 +20,8 @@ Commands
    the last week. Grouped by user. Filter by @username optionally.
 -  ``/music_from_beginning @username`` Retrieves the music shared in the
    chat from the beginning of time by an user.
+-  ``/mymusic`` Retrieves the music that you shared in all the chats.
+   It has to be called from a private conversation.
 -  ``/recommendations`` Returns a list of 10 recommended tracks based on
    the sent albums from the last week.
 -  ``/np`` Now Playing. Returns track information about what you are

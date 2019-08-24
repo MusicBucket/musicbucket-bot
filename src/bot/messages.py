@@ -15,6 +15,8 @@ log = logging.getLogger(__name__)
 class MessageProcessor:
     @staticmethod
     def process_message(bot, update):
+        if not update.message:
+            return
         message = update.message.text
         url = UrlProcessor.extract_url_from_message(message)
         if url:

@@ -43,7 +43,7 @@ class LoggerMixin:
 
     @staticmethod
     def log_db_operation(db_operation, entity):
-
+        msg = ''
         if isinstance(entity, models.Link):
             msg = f'{db_operation}. Link: "{entity.url}". Type: "{entity.link_type}". ' \
                 f'User: "{entity.user.id} ({entity.user.username or ""}"). ' \
