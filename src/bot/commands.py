@@ -61,18 +61,18 @@ class Command(ReplyMixin, LoggerMixin):
     COMMAND = None
     WEB_PAGE_PREVIEW = False
 
-    def __init__(self, bot, update, args=[]):
+    def __init__(self, bot, update, args=None):
         self.bot = bot
         self.update = update
-        self.args = args
-
-    def get_response(self):
-        return ''
+        self.args = args or []
 
     def run(self):
         self.log_command(self.COMMAND, self.args, self.update)
         self.reply(self.bot, self.update, self.get_response(),
                    disable_web_page_preview=not self.WEB_PAGE_PREVIEW)
+
+    def get_response(self):
+        raise NotImplementedError()
 
 
 class MusicCommand(Command):
@@ -394,7 +394,7 @@ class NowPlayingCommand(Command):
     def _build_message(now_playing, username):
         if not username:
             return f'There is no Last.fm username for your user. Please set your username with:\n' \
-                f'<i>/lastfmset username</i>'
+                   f'<i>/lastfmset username</i>'
         if not now_playing:
             return f'<b>{username}</b> is not currently playing music'
 
@@ -487,9 +487,11 @@ class StatsCommand(Command):
     def _build_message(stats_by_user):
         msg = '<strong>Links sent by the users from the beginning in this chat:</strong> \n'
         for user in stats_by_user:
-            msg += '- {} <strong>{}:</strong> {}\n'.format(emojize(':baby:', use_aliases=True),
-                                                           user.username or user.first_name,
-                                                           user.links)
+            msg += '- {} <strong>{}:</strong> {}\n'.format(
+                emojize(':baby:', use_aliases=True),
+                user.username or user.first_name,
+                user.links
+            )
         return msg
 
     def _get_stats_by_user(self):
