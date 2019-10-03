@@ -3,6 +3,7 @@ __pycache__/
 .idea/
 env/
 .env
+.DS_Store
 
 db.sqlite
 db_old.sqlite
