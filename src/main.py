@@ -42,7 +42,7 @@ def main():
     _setup_sentry()
 
     # Bot start
-    updater = Updater(getenv('TOKEN'))
+    updater = Updater(getenv('TOKEN'), use_context=True)
 
     # Register handlers
     dispatcher = updater.dispatcher
