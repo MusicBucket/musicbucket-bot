@@ -431,7 +431,7 @@ class NowPlayingCommand(Command):
         return
 
     def _save_link(self, url):
-        url_processor = UrlProcessor(self.bot, self.update, url, self)
+        url_processor = UrlProcessor(self.update, self.context, url, self)
         url_processor.process()
 
 
