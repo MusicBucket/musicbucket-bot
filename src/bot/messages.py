@@ -2,6 +2,8 @@ import logging
 import re
 
 from emoji import emojize
+from telegram import Update
+from telegram.ext import CallbackContext
 
 from bot.logger import LoggerMixin
 from bot.models import Link, CreateOrUpdateMixin
@@ -14,20 +16,20 @@ log = logging.getLogger(__name__)
 
 class MessageProcessor:
     @staticmethod
-    def process_message(bot, update):
+    def process_message(update: Update, context: CallbackContext):
         if not update.message:
             return
         message = update.message.text
         url = UrlProcessor.extract_url_from_message(message)
         if url:
-            url_processor = UrlProcessor(bot, update, url)
+            url_processor = UrlProcessor(update, context, url)
             url_processor.process()
 
 
 class UrlProcessor(ReplyMixin, LoggerMixin, SpotifyUrlMixin, CreateOrUpdateMixin):
-    def __init__(self, bot, update, url, command=None):
-        self.bot = bot
+    def __init__(self, update, context, url, command=None):
         self.update = update
+        self.context = context
         self.url = url
         self.command = command
         self.spotify_client = SpotifyClient()
@@ -94,11 +96,11 @@ class UrlProcessor(ReplyMixin, LoggerMixin, SpotifyUrlMixin, CreateOrUpdateMixin
         if track_preview_url:
             performer = spotify_track['artists'][0].get('name', 'unknown')
             title = spotify_track.get('name', 'unknown')
-            self.reply(bot=self.bot, update=self.update, message=msg, reply_type=ReplyType.AUDIO,
+            self.reply(update=self.update, context=self.context, message=msg, reply_type=ReplyType.AUDIO,
                        audio=track_preview_url, title=title, performer=performer
                        )
         else:
-            self.reply(self.bot, self.update, msg)
+            self.reply(self.update, self.context, msg)
 
     @staticmethod
     def extract_url_from_message(text):

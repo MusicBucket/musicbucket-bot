@@ -5,6 +5,8 @@ from collections import defaultdict
 
 from emoji import emojize
 from peewee import fn, SQL
+from telegram import Update
+from telegram.ext import CallbackContext
 
 from bot.logger import LoggerMixin
 from bot.messages import UrlProcessor
@@ -21,39 +23,39 @@ class CommandFactory:
     """Handles the execution of the commands"""
 
     @staticmethod
-    def run_music_command(bot, update, args):
-        command = MusicCommand(bot, update, args)
+    def run_music_command(update: Update, context: CallbackContext):
+        command = MusicCommand(update, context)
         command.run()
 
     @staticmethod
-    def run_music_from_beginning_command(bot, update, args):
-        command = MusicFromBeginningCommand(bot, update, args)
+    def run_music_from_beginning_command(update: Update, context: CallbackContext):
+        command = MusicFromBeginningCommand(update, context)
         command.run()
 
     @staticmethod
-    def run_my_music_command(bot, update):
+    def run_my_music_command(update: Update, context: CallbackContext):
         if update.message.chat.type != 'group':
-            command = MyMusicCommand(bot, update)
+            command = MyMusicCommand(update, context)
             command.run()
 
     @staticmethod
-    def run_recommendations_command(bot, update):
-        command = RecommendationsCommand(bot, update)
+    def run_recommendations_command(update: Update, context: CallbackContext):
+        command = RecommendationsCommand(update, context)
         command.run()
 
     @staticmethod
-    def run_now_playing_command(bot, update):
-        command = NowPlayingCommand(bot, update)
+    def run_now_playing_command(update: Update, context: CallbackContext):
+        command = NowPlayingCommand(update, context)
         command.run()
 
     @staticmethod
-    def run_lastfmset_command(bot, update, args):
-        command = LastfmSetCommand(bot, update, args)
+    def run_lastfmset_command(update: Update, context: CallbackContext):
+        command = LastfmSetCommand(update, context)
         command.run()
 
     @staticmethod
-    def run_stats_command(bot, update):
-        command = StatsCommand(bot, update)
+    def run_stats_command(update: Update, context: CallbackContext):
+        command = StatsCommand(update, context)
         command.run()
 
 
@@ -61,14 +63,14 @@ class Command(ReplyMixin, LoggerMixin):
     COMMAND = None
     WEB_PAGE_PREVIEW = False
 
-    def __init__(self, bot, update, args=None):
-        self.bot = bot
+    def __init__(self, update, context):
         self.update = update
-        self.args = args or []
+        self.context = context
+        self.args = context.args or []
 
     def run(self):
         self.log_command(self.COMMAND, self.args, self.update)
-        self.reply(self.bot, self.update, self.get_response(),
+        self.reply(self.update, self.context, self.get_response(),
                    disable_web_page_preview=not self.WEB_PAGE_PREVIEW)
 
     def get_response(self):
@@ -314,8 +316,8 @@ class RecommendationsCommand(Command):
     DAYS = 7
     LAST_WEEK = datetime.datetime.now() - datetime.timedelta(days=DAYS)
 
-    def __init__(self, bot, update):
-        super().__init__(bot, update)
+    def __init__(self, update, context):
+        super().__init__(update, context)
         self.spotify_client = SpotifyClient()
 
     def get_response(self):
@@ -369,8 +371,8 @@ class NowPlayingCommand(Command):
     COMMAND = 'np'
     WEB_PAGE_PREVIEW = True
 
-    def __init__(self, bot, update):
-        super().__init__(bot, update)
+    def __init__(self, update, context):
+        super().__init__(update, context)
         self.lastfm_client = LastFMClient()
         self.spotify_client = SpotifyClient()
 

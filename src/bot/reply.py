@@ -6,6 +6,7 @@ from telegram import ParseMode
 
 log = logging.getLogger(__name__)
 
+
 class ReplyType(Enum):
     TEXT = 0
     IMAGE = 1
@@ -15,14 +16,14 @@ class ReplyType(Enum):
 class ReplyMixin:
     MAX_RESPONSE_LENGTH = 4096
 
-    def reply(self, bot, update, message, reply_type=ReplyType.TEXT, audio=None, title=None, performer=None,
+    def reply(self, update, context, message, reply_type=ReplyType.TEXT, audio=None, title=None, performer=None,
               image=None, disable_web_page_preview=False):
         if reply_type == ReplyType.TEXT:
             self._reply_text(update, message, disable_web_page_preview)
         if reply_type == ReplyType.AUDIO:
-            self._reply_audio(bot, update, audio, message, performer, title)
+            self._reply_audio(update, context, audio, message, performer, title)
         if reply_type == ReplyType.IMAGE:
-            self._reply_image(bot, update, image, message)
+            self._reply_image(update, context, image, message)
 
     def _reply_text(self, update, message, disable_web_page_preview=True):
         """Replies the message to the original chat splitting the message if necessary"""
@@ -53,14 +54,15 @@ class ReplyMixin:
         return
 
     @staticmethod
-    def _reply_image(bot, update, image, caption):
+    def _reply_image(update, context, image, caption):
         chat_id = update.message.chat_id
-        bot.send_photo(chat_id, image, caption=caption, disable_web_page_preview=True, parse_mode=ParseMode.HTML)
+        context.bot.send_photo(chat_id, image, caption=caption, disable_web_page_preview=True,
+                               parse_mode=ParseMode.HTML)
 
     @staticmethod
-    def _reply_audio(bot, update, audio, caption, performer, title):
+    def _reply_audio(update, context, audio, caption, performer, title):
         chat_id = update.message.chat_id
         reply_to_message_id = update.message.message_id
-        bot.send_audio(chat_id, audio, title=title, performer=performer, caption=caption,
-                       reply_to_message_id=reply_to_message_id, disable_web_page_preview=True,
-                       parse_mode=ParseMode.HTML)
+        context.bot.send_audio(chat_id, audio, title=title, performer=performer, caption=caption,
+                               reply_to_message_id=reply_to_message_id, disable_web_page_preview=True,
+                               parse_mode=ParseMode.HTML)

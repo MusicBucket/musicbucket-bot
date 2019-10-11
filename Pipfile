@@ -5,6 +5,7 @@ verify_ssl = true
 
 [dev-packages]
 pytest = "*"
+ipdb = "*"
 
 [packages]
 python-dotenv = "*"
@@ -13,8 +14,7 @@ requests = "*"
 sqlalchemy = "*"
 emoji = "*"
 spotipy = "*"
-peewee = "*"
-ipdb = "*"
+peewee = "==3.11.2"
 pylast = "*"
 musicbrainzngs = "*"
 sentry-sdk = "==0.8.0"
