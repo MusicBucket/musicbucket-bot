@@ -12,9 +12,9 @@ log = logging.getLogger(__name__)
 class SearchInline(LoggerMixin):
     INLINE = 'search'
 
-    def __init__(self, bot, update):
-        self.bot = bot
+    def __init__(self, update, context):
         self.update = update
+        self.context = context
         self.spotify_client = SpotifyClient()
         self._perform_search()
 
