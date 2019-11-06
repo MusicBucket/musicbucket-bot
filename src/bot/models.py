@@ -2,7 +2,7 @@ import logging
 import datetime
 
 from peewee import Model, CharField, DateTimeField, IntegerField, ForeignKeyField, CompositeKey, ManyToManyField, \
-    BooleanField
+    BooleanField, AutoField
 
 from bot.db import db
 from bot.music.music import StreamingServiceType, LinkType
@@ -104,6 +104,7 @@ TrackArtist = Track.artists.get_through_model()
 
 
 class Link(BaseModel):
+    id = AutoField()
     url = CharField()
     link_type = CharField()
     streaming_service_type = CharField(default=StreamingServiceType.SPOTIFY.value)
@@ -116,9 +117,6 @@ class Link(BaseModel):
     user = ForeignKeyField(User, backref='links')
     chat = ForeignKeyField(Chat, backref='links')
     last_update_user = ForeignKeyField(User, backref='updated_links', null=True)
-
-    class Meta:
-        primary_key = CompositeKey('url', 'chat')
 
     @property
     def genres(self):
