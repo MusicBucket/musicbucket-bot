@@ -148,6 +148,19 @@ class LastFMUsername(BaseModel):
     username = CharField(unique=True)
 
 
+class SavedLink(BaseModel):
+    id = AutoField()
+    user = ForeignKeyField(User, backref='saved_links')
+    link = ForeignKeyField(Link, backref='saved_links')
+    saved_at = DateTimeField()
+    deleted_at = DateTimeField(null=True)
+
+    class Meta:
+        indexes = (
+            (('user', 'link'), True),
+        )
+
+
 class CreateOrUpdateMixin:
     """
     TODO: Replace get_or_create for insert_or_replace or equivalent to create_or_update

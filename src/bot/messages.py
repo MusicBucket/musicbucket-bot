@@ -2,9 +2,10 @@ import logging
 import re
 
 from emoji import emojize
-from telegram import Update
+from telegram import Update, InlineKeyboardButton
 from telegram.ext import CallbackContext
 
+from bot.buttons import SaveLinkButton
 from bot.logger import LoggerMixin
 from bot.models import Link, CreateOrUpdateMixin
 from bot.music.music import LinkType
@@ -27,12 +28,14 @@ class MessageProcessor:
 
 
 class UrlProcessor(ReplyMixin, LoggerMixin, SpotifyUrlMixin, CreateOrUpdateMixin):
+
     def __init__(self, update, context, url, command=None):
         self.update = update
         self.context = context
         self.url = url
         self.command = command
         self.spotify_client = SpotifyClient()
+        self.save_button = InlineKeyboardButton("Save")
 
     def process(self):
         is_valid = self.is_valid_url(self.url)
@@ -87,20 +90,25 @@ class UrlProcessor(ReplyMixin, LoggerMixin, SpotifyUrlMixin, CreateOrUpdateMixin
             msg += '{} {} by <strong>{}</strong>\n'.format(emojize(':musical_note:', use_aliases=True),
                                                            link.track.name,
                                                            link.track.artists.first().name)
+        # Only show the link if the processed url comes from a /np command
         if isinstance(self.command, NowPlayingCommand):
             msg += f'{link.url} \n'
 
         msg += '<strong>Genres:</strong> {}'.format(genres if genres else 'N/A')
+        save_link_button_keyboard_markup = SaveLinkButton.get_keyboard_markup(link.id)
 
         track_preview_url = spotify_track.get('preview_url', None)
         if track_preview_url:
             performer = spotify_track['artists'][0].get('name', 'unknown')
             title = spotify_track.get('name', 'unknown')
             self.reply(update=self.update, context=self.context, message=msg, reply_type=ReplyType.AUDIO,
-                       audio=track_preview_url, title=title, performer=performer
-                       )
+                       audio=track_preview_url, title=title, performer=performer,
+                       reply_markup=save_link_button_keyboard_markup)
         else:
-            self.reply(self.update, self.context, msg)
+            self.reply(self.update, self.context, msg, reply_markup=save_link_button_keyboard_markup)
+
+    def _build_save_button(self, link_id):
+        self.save_button.callback_data = link_id
 
     @staticmethod
     def extract_url_from_message(text):

@@ -1,21 +1,22 @@
 import sentry_sdk
 
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, InlineQueryHandler
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, InlineQueryHandler, CallbackQueryHandler
 from dotenv import load_dotenv
 from os import getenv
 import logging
 
+from bot.buttons import SaveLinkButton
 from bot.db import db
 from bot.messages import MessageProcessor
 from bot.models import Link, Artist, Genre, User, Chat, Album, Track, AlbumArtist, AlbumGenre, ArtistGenre, \
-    TrackArtist, LastFMUsername
+    TrackArtist, LastFMUsername, SavedLink
 from bot.commands import CommandFactory
 from bot.search import SearchInline
 
 load_dotenv()
 
 logging.basicConfig(
-    filename='musicbucket-bot.log',
+    # filename='musicbucket-bot.log',
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -25,7 +26,7 @@ def _setup_database():
     db.connect()
     db.create_tables(
         [User, Chat, Link, Artist, Album, Track, Genre, AlbumArtist, AlbumGenre, ArtistGenre, TrackArtist,
-         LastFMUsername])
+         LastFMUsername, SavedLink])
 
 
 def _setup_sentry():
@@ -61,6 +62,7 @@ def main():
     dispatcher.add_handler(CommandHandler('stats',
                                           CommandFactory.run_stats_command))
     dispatcher.add_handler(InlineQueryHandler(SearchInline))
+    dispatcher.add_handler(CallbackQueryHandler(SaveLinkButton.handle))
 
     # Non command handlers
     dispatcher.add_handler(MessageHandler(

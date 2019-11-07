@@ -16,20 +16,21 @@ class ReplyType(Enum):
 class ReplyMixin:
     MAX_RESPONSE_LENGTH = 4096
 
-    def reply(self, update, context, message, reply_type=ReplyType.TEXT, audio=None, title=None, performer=None,
+    def reply(self, update, context, message, reply_type=ReplyType.TEXT, reply_markup=None, audio=None, title=None,
+              performer=None,
               image=None, disable_web_page_preview=False):
         if reply_type == ReplyType.TEXT:
-            self._reply_text(update, message, disable_web_page_preview)
+            self._reply_text(update, message, reply_markup, disable_web_page_preview)
         if reply_type == ReplyType.AUDIO:
-            self._reply_audio(update, context, audio, message, performer, title)
+            self._reply_audio(update, context, audio, message, performer, title, reply_markup)
         if reply_type == ReplyType.IMAGE:
-            self._reply_image(update, context, image, message)
+            self._reply_image(update, context, image, message, reply_markup)
 
-    def _reply_text(self, update, message, disable_web_page_preview=True):
+    def _reply_text(self, update, message, reply_markup=None, disable_web_page_preview=True):
         """Replies the message to the original chat splitting the message if necessary"""
         if len(message) <= self.MAX_RESPONSE_LENGTH:
             update.message.reply_text(message, disable_web_page_preview=disable_web_page_preview,
-                                      parse_mode=ParseMode.HTML)
+                                      parse_mode=ParseMode.HTML, reply_markup=reply_markup)
             return
 
         parts = []
@@ -54,15 +55,15 @@ class ReplyMixin:
         return
 
     @staticmethod
-    def _reply_image(update, context, image, caption):
+    def _reply_image(update, context, image, caption, reply_markup=None):
         chat_id = update.message.chat_id
         context.bot.send_photo(chat_id, image, caption=caption, disable_web_page_preview=True,
-                               parse_mode=ParseMode.HTML)
+                               parse_mode=ParseMode.HTML, reply_markup=reply_markup)
 
     @staticmethod
-    def _reply_audio(update, context, audio, caption, performer, title):
+    def _reply_audio(update, context, audio, caption, performer, title, reply_markup=None):
         chat_id = update.message.chat_id
         reply_to_message_id = update.message.message_id
         context.bot.send_audio(chat_id, audio, title=title, performer=performer, caption=caption,
                                reply_to_message_id=reply_to_message_id, disable_web_page_preview=True,
-                               parse_mode=ParseMode.HTML)
+                               parse_mode=ParseMode.HTML, reply_markup=reply_markup)
