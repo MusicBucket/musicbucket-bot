@@ -61,8 +61,9 @@ class CommandFactory:
 
     @staticmethod
     def run_delete_saved_links_command(update: Update, context: CallbackContext):
-        command = DeleteSavedLinksCommand(update, context)
-        command.run()
+        if update.message.chat.type != 'group':
+            command = DeleteSavedLinksCommand(update, context)
+            command.run()
 
     @staticmethod
     def run_stats_command(update: Update, context: CallbackContext):
