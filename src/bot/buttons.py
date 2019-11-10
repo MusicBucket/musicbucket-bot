@@ -1,7 +1,6 @@
 import datetime
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram.ext import CallbackContext
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 from bot.models import SavedLink
 
