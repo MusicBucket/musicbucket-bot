@@ -116,7 +116,7 @@ class MusicCommand(Command):
                                                         user.username or user.first_name)
             for link in links:
                 msg += '    {} <a href="{}">{}</a> {}\n'.format(
-                    link.emoji,
+                    link.get_emoji(),
                     link.url,
                     str(link),
                     '({})'.format(link.genres[0]) if link.genres else ''
@@ -176,7 +176,7 @@ class MusicFromBeginningCommand(Command):
             )
             for link in links:
                 msg += '    {}  {} <a href="{}">{}</a> {}\n'.format(
-                    link.emoji,
+                    link.get_emoji(),
                     '[{}]'.format(
                         link.created_at.strftime("%Y/%m/%d"), ' | Updated @ {} by {}'.format(
                             link.updated_at.strftime("%Y/%m/%d"),
@@ -224,7 +224,7 @@ class MyMusicCommand(Command):
         msg = '<strong>Music sent in all your chats from the beginning of time:</strong> \n'
         for link in all_time_links:
             msg += '    {}  {} <a href="{}">{}</a> {}\n'.format(
-                link.emoji,
+                link.get_emoji(),
                 '[{}{}@{}]'.format(
                     link.created_at.strftime("%Y/%m/%d"), ' | Updated @ {} by {}'.format(
                         link.updated_at.strftime("%Y/%m/%d"),
@@ -292,7 +292,7 @@ class RecommendationsCommand(Command):
             '</strong>, <strong>'.join(artists_names))
         for track in track_recommendations['tracks']:
             msg += '{} <a href="{}">{}</a> by <strong>{}</strong>\n'.format(
-                Track.emoji,
+                Track.get_emoji(),
                 track['external_urls']['spotify'],
                 track['name'],
                 track['artists'][0]['name'])
@@ -346,11 +346,11 @@ class NowPlayingCommand(Command):
         cover = now_playing.get('cover')
 
         msg = f"<b>{username}</b>'s now playing:\n"
-        msg += f"{Track.emoji} {track.title}\n"
+        msg += f"{Track.get_emoji()} {track.title}\n"
         if album:
-            msg += f"{Album.emoji} {album.title}\n"
+            msg += f"{Album.get_emoji()} {album.title}\n"
         if artist:
-            msg += f"{Artist.emoji} {artist}\n"
+            msg += f"{Artist.get_emoji()} {artist}\n"
         if cover:
             msg += f"<a href='{cover}'>&#8205;</a>"
         return msg
@@ -487,7 +487,7 @@ class StatsCommand(Command):
         msg = '<strong>Links sent by the users from the beginning in this chat:</strong> \n'
         for user in stats_by_user:
             msg += '- {} <strong>{}:</strong> {}\n'.format(
-                User.emoji,
+                User.get_emoji(),
                 user.username or user.first_name,
                 user.links
             )
