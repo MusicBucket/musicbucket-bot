@@ -1,21 +1,31 @@
 import datetime
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.ext import CallbackContext
 
 from bot.models import SavedLink
 
 
-class SaveLinkButton:
+class ButtonMixin:
+
+    @classmethod
+    def get_callback_data(cls, query_data):
+        callback_data = query_data.split(f"{cls.CALLBACK_NAME}:")[1]
+        return callback_data
+
+
+class SaveLinkButton(ButtonMixin):
     """
     Defines a Save Link Button used in messages to save a sent link into an user's savedlinks table
     """
+    CALLBACK_NAME = 'save_link'
 
     @classmethod
     def handle(cls, update, context):
         """Handles the pulsation of the button"""
         query = update.callback_query
         user_id = query.from_user.id
-        link_id = query.data
+        link_id = cls.get_callback_data(query.data)
         cls._save_to_user_saved_links(user_id, link_id)
         context.bot.edit_message_reply_markup(
             chat_id=query.message.chat_id,
@@ -31,7 +41,39 @@ class SaveLinkButton:
             defaults={'saved_at': datetime.datetime.now()}
         )
 
+    @classmethod
+    def get_keyboard_markup(cls, link_id):
+        keyboard = [[InlineKeyboardButton("Save", callback_data=f'{cls.CALLBACK_NAME}:{link_id}')]]
+        return InlineKeyboardMarkup(keyboard)
+
+
+class DeleteSavedLinkButton(ButtonMixin):
+    """
+    Defines the Delete Saved Link Button shown when calling /deletesavedlinks command
+    """
+    CALLBACK_NAME = 'delete_saved_link'
+
+    @classmethod
+    def handle(cls, update, context):
+        """Handles the pulsation of the button"""
+        query = update.callback_query
+        saved_link_id = cls.get_callback_data(query.data)
+        cls._delete_from_user_saved_links(saved_link_id)
+        context.bot.edit_message_reply_markup(
+            chat_id=query.message.chat_id,
+            message_id=query.message.message_id
+        )
+
     @staticmethod
-    def get_keyboard_markup(link_id):
-        keyboard = [[InlineKeyboardButton("Save", callback_data=link_id)]]
+    def _delete_from_user_saved_links(saved_link_id):
+        """Deletes a link of an user from the SavedLink table"""
+        return SavedLink.delete_by_id(saved_link_id)
+
+    @classmethod
+    def get_keyboard_markup(cls, saved_links):
+        keyboard = []
+        for saved_link in saved_links:
+            keyboard.append([InlineKeyboardButton(
+                str(saved_link.link), callback_data=f'{cls.CALLBACK_NAME}:{saved_link.id}'
+            )])
         return InlineKeyboardMarkup(keyboard)

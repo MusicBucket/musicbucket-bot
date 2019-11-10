@@ -1,7 +1,8 @@
 import logging
 import datetime
 
-from peewee import Model, CharField, DateTimeField, IntegerField, ForeignKeyField, CompositeKey, ManyToManyField, \
+from emoji import emojize
+from peewee import Model, CharField, DateTimeField, IntegerField, ForeignKeyField, ManyToManyField, \
     BooleanField, AutoField
 
 from bot.db import db
@@ -15,10 +16,24 @@ class BaseModel(Model):
         database = db
 
 
-class User(BaseModel):
+class EmojiModelMixin:
+    EMOJI = None
+
+    @classmethod
+    def get_emoji(cls):
+        raise NotImplementedError()
+
+
+class User(BaseModel, EmojiModelMixin):
+    EMOJI = ':baby:'
+
     id = CharField(primary_key=True)
     username = CharField(null=True)
     first_name = CharField(null=True)
+
+    @classmethod
+    def get_emoji(cls):
+        return emojize(cls.EMOJI, use_aliases=True)
 
     def __str__(self):
         return 'User {}'.format(self.id)
@@ -39,7 +54,9 @@ class Genre(BaseModel):
         return self.name
 
 
-class Artist(BaseModel):
+class Artist(BaseModel, EmojiModelMixin):
+    EMOJI = ':busts_in_silhouette:'
+
     id = CharField(primary_key=True)
     name = CharField()
     image = CharField(null=True)
@@ -49,11 +66,17 @@ class Artist(BaseModel):
     uri = CharField()
     genres = ManyToManyField(Genre, backref='artists')
 
+    @classmethod
+    def get_emoji(cls):
+        return emojize(cls.EMOJI, use_aliases=True)
+
 
 ArtistGenre = Artist.genres.get_through_model()
 
 
-class Album(BaseModel):
+class Album(BaseModel, EmojiModelMixin):
+    EMOJI = ':cd:'
+
     ALBUM_TYPES = (
         'album',
         'single',
@@ -75,12 +98,18 @@ class Album(BaseModel):
             return self.artists.first()
         return None
 
+    @classmethod
+    def get_emoji(cls):
+        return emojize(cls.EMOJI, use_aliases=True)
+
 
 AlbumGenre = Album.genres.get_through_model()
 AlbumArtist = Album.artists.get_through_model()
 
 
-class Track(BaseModel):
+class Track(BaseModel, EmojiModelMixin):
+    EMOJI = ':musical_note:'
+
     id = CharField(primary_key=True)
     name = CharField()
     track_number = IntegerField(null=True)
@@ -99,11 +128,15 @@ class Track(BaseModel):
             return self.artists.first()
         return None
 
+    @classmethod
+    def get_emoji(cls):
+        return emojize(cls.EMOJI, use_aliases=True)
+
 
 TrackArtist = Track.artists.get_through_model()
 
 
-class Link(BaseModel):
+class Link(BaseModel, EmojiModelMixin):
     id = AutoField()
     url = CharField()
     link_type = CharField()
@@ -131,6 +164,14 @@ class Link(BaseModel):
             return []
         return genres
 
+    def get_emoji(self):
+        if self.link_type == LinkType.ARTIST.value:
+            return Artist.get_emoji()
+        elif self.link_type == LinkType.ALBUM.value:
+            return Album.get_emoji()
+        elif self.link_type == LinkType.TRACK.value:
+            return Track.get_emoji()
+
     def apply_update(self, user):
         """
         Set the update fields to the current values
@@ -140,7 +181,18 @@ class Link(BaseModel):
         self.times_sent += 1
 
     def __str__(self):
-        return 'Link: {}'.format(self.url)
+        if self.link_type == LinkType.ARTIST.value:
+            return self.artist.name
+        elif self.link_type == LinkType.ALBUM.value:
+            return "{} - {}".format(
+                self.album.get_first_artist().name if self.album.get_first_artist() else '',
+                self.album.name
+            )
+        elif self.link_type == LinkType.TRACK.value:
+            return "{} by {}".format(
+                self.track.name,
+                self.track.artists.first().name if self.track.get_first_artist() else '',
+            )
 
 
 class LastFMUsername(BaseModel):

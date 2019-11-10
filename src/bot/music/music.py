@@ -17,6 +17,7 @@ class LinkType(Enum):
     TRACK = 'TRACK'
 
 
+
 class StreamingServiceType(Enum):
     """Available streaming services"""
     SPOTIFY = 'SPOTIFY'

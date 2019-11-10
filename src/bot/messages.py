@@ -35,7 +35,6 @@ class UrlProcessor(ReplyMixin, LoggerMixin, SpotifyUrlMixin, CreateOrUpdateMixin
         self.url = url
         self.command = command
         self.spotify_client = SpotifyClient()
-        self.save_button = InlineKeyboardButton("Save")
 
     def process(self):
         is_valid = self.is_valid_url(self.url)
@@ -106,9 +105,6 @@ class UrlProcessor(ReplyMixin, LoggerMixin, SpotifyUrlMixin, CreateOrUpdateMixin
                        reply_markup=save_link_button_keyboard_markup)
         else:
             self.reply(self.update, self.context, msg, reply_markup=save_link_button_keyboard_markup)
-
-    def _build_save_button(self, link_id):
-        self.save_button.callback_data = link_id
 
     @staticmethod
     def extract_url_from_message(text):

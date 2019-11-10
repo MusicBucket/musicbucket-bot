@@ -42,12 +42,13 @@ class SpotifyUrlMixin:
     @staticmethod
     def is_valid_url(url):
         """Check if a message contains a Spotify Link"""
-        return 'open.spotify.com' in url
+        return SpotifyClient.SPOTIFY_LINK_URL in url
 
 
 class SpotifyClient(SpotifyUrlMixin):
     RECOMMENDATIONS_NUMBER = 10
     MAX_RECOMMENDATIONS_SEEDS = 5
+    SPOTIFY_LINK_URL = 'open.spotify.com'
 
     def __init__(self):
         client_credentials_manager = SpotifyClientCredentials(client_id=CLIENT_ID, client_secret=CLIENT_SECRET)
