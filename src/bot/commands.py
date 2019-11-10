@@ -438,7 +438,8 @@ class SavedLinksCommand(Command):
                                .select()
                                .join(Link)
                                .join(User)
-                               .where(User.id == self.update.message.from_user.id))
+                               .where(User.id == self.update.message.from_user.id)
+                               .where(SavedLink.deleted_at is None))
         return saved_links_by_user
 
 
