@@ -66,8 +66,9 @@ class DeleteSavedLinkButton(ButtonMixin):
     @staticmethod
     def _delete_from_user_saved_links(saved_link_id):
         """(Soft)Deletes a link of an user from the SavedLink table"""
-        return SavedLink.update(deleted_at=datetime.datetime.now()) \
-            .where(SavedLink.id == saved_link_id)
+        query = SavedLink.update(deleted_at=datetime.datetime.now()).where(SavedLink.id == saved_link_id).returning(
+            SavedLink)
+        return query.execute()
 
     @classmethod
     def get_keyboard_markup(cls, saved_links):
