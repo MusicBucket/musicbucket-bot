@@ -95,7 +95,6 @@ class UrlProcessor(ReplyMixin, LoggerMixin, SpotifyUrlMixin, CreateOrUpdateMixin
 
         msg += '<strong>Genres:</strong> {}'.format(genres if genres else 'N/A')
         save_link_button_keyboard_markup = SaveLinkButton.get_keyboard_markup(link.id)
-
         track_preview_url = spotify_track.get('preview_url', None)
         if track_preview_url:
             performer = spotify_track['artists'][0].get('name', 'unknown')

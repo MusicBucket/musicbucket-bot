@@ -207,11 +207,6 @@ class SavedLink(BaseModel):
     saved_at = DateTimeField()
     deleted_at = DateTimeField(null=True)
 
-    class Meta:
-        indexes = (
-            (('user', 'link'), True),
-        )
-
 
 class CreateOrUpdateMixin:
     """
