@@ -26,10 +26,6 @@ class SaveLinkButton(ButtonMixin):
         user_id = query.from_user.id
         link_id = cls.get_callback_data(query.data)
         cls._save_to_user_saved_links(user_id, link_id)
-        context.bot.edit_message_reply_markup(
-            chat_id=query.message.chat_id,
-            message_id=query.message.message_id,
-        )
 
     @staticmethod
     def _save_to_user_saved_links(user_id, link_id):
