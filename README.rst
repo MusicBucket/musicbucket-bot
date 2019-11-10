@@ -12,6 +12,9 @@ a chat and shows them by request, with the related info:
 It also integrates with **Last.fm** to retrieve information about your
 user like **Now Playing**.
 
+It has the feature to allow you to save in a personal list the links someones shares in a Chat.
+So you can easily track which music you have pending to listen to.
+
 
 Commands
 ~~~~~~~~
@@ -20,6 +23,8 @@ Commands
    the last week. Grouped by user. Filter by @username optionally.
 -  ``/music_from_beginning @username`` Retrieves the music shared in the
    chat from the beginning of time by an user.
+-  ``/savedlinks`` Retrieves a list with your saved links
+-  ``/deletesavedlinks`` Shows a list of buttons for deleting saved links
 -  ``/mymusic`` Retrieves the music that you shared in all the chats.
    It has to be called from a private conversation.
 -  ``/recommendations`` Returns a list of 10 recommended tracks based on
