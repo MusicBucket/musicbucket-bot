@@ -26,15 +26,23 @@ class SaveLinkButton(ButtonMixin):
         user_id = query.from_user.id
         link_id = cls.get_callback_data(query.data)
         cls._save_to_user_saved_links(user_id, link_id)
+        return
 
     @staticmethod
     def _save_to_user_saved_links(user_id, link_id):
         """Saves a link to the SavedLink table"""
-        return SavedLink.get_or_create(
-            user_id=user_id,
-            link_id=link_id,
-            defaults={'saved_at': datetime.datetime.now()}
-        )
+        saved_link = SavedLink.get_or_none(user_id=user_id, link_id=link_id)
+        if saved_link:
+            saved_link.deleted_at = None
+            saved_link.saved_at = datetime.datetime.now()
+            saved_link.save()
+        else:
+            saved_link = SavedLink.create(
+                user_id=user_id,
+                link_id=link_id,
+                saved_at=datetime.datetime.now()
+            )
+        return saved_link
 
     @classmethod
     def get_keyboard_markup(cls, link_id):
