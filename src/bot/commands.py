@@ -438,7 +438,7 @@ class SavedLinksCommand(Command):
                                .select()
                                .join(Link)
                                .join(User)
-                               .where((User.id == self.update.message.from_user.id) & (SavedLink.deleted_at.is_null())))
+                               .where((SavedLink.user_id == self.update.message.from_user.id) & (SavedLink.deleted_at.is_null())))
         return saved_links_by_user
 
 
@@ -466,7 +466,7 @@ class DeleteSavedLinksCommand(Command):
                                .select()
                                .join(Link)
                                .join(User)
-                               .where((User.id == self.update.message.from_user.id) & (SavedLink.deleted_at.is_null())))
+                               .where((SavedLink.user_id == self.update.message.from_user.id) & (SavedLink.deleted_at.is_null())))
         return saved_links_by_user
 
 
