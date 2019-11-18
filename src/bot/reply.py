@@ -17,8 +17,7 @@ class ReplyMixin:
     MAX_RESPONSE_LENGTH = 4096
 
     def reply(self, update, context, message, reply_type=ReplyType.TEXT, reply_markup=None, audio=None, title=None,
-              performer=None,
-              image=None, disable_web_page_preview=False):
+              performer=None, image=None, disable_web_page_preview=False):
         if reply_type == ReplyType.TEXT:
             self._reply_text(update, message, reply_markup, disable_web_page_preview)
         if reply_type == ReplyType.AUDIO:

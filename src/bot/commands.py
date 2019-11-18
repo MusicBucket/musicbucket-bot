@@ -429,16 +429,14 @@ class SavedLinksCommand(Command):
 
         msg = '<strong>Saved links:</strong> \n'
         for saved_link in saved_links:
-            msg += f'- {saved_link.link.get_emoji()} <a href="{saved_link.link.url}">{str(saved_link.link)}</a>. ' \
+            msg += f'- {saved_link.link.get_emoji()} <a href="{saved_link.link.url}">{str(saved_link.link)}</a> ' \
+                   f'({saved_link.link.genres[0] if saved_link.link.genres else ""}). ' \
                    f'Saved at: {saved_link.saved_at.strftime("%Y/%m/%d")}\n'
         return msg
 
     def _get_saved_links_by_user(self):
-        saved_links_by_user = (SavedLink
-                               .select()
-                               .join(Link)
-                               .join(User)
-                               .where((SavedLink.user_id == self.update.message.from_user.id) & (SavedLink.deleted_at.is_null())))
+        saved_links_by_user = (SavedLink.select().join(Link).join(User).where(
+            (SavedLink.user_id == self.update.message.from_user.id) & (SavedLink.deleted_at.is_null())))
         return saved_links_by_user
 
 
@@ -463,10 +461,11 @@ class DeleteSavedLinksCommand(Command):
 
     def _get_saved_links_by_user(self):
         saved_links_by_user = (SavedLink
-                               .select()
-                               .join(Link)
-                               .join(User)
-                               .where((SavedLink.user_id == self.update.message.from_user.id) & (SavedLink.deleted_at.is_null())))
+            .select()
+            .join(Link)
+            .join(User)
+            .where(
+            (SavedLink.user_id == self.update.message.from_user.id) & (SavedLink.deleted_at.is_null())))
         return saved_links_by_user
 
 
