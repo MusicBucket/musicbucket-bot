@@ -35,7 +35,7 @@ class CommandFactory:
 
     @staticmethod
     def run_my_music_command(update: Update, context: CallbackContext):
-        if update.message.chat.type != 'group':
+        if update.message.chat.type != 'group' and update.message.chat.type != 'supergroup':
             command = MyMusicCommand(update, context)
             command.run()
 
@@ -51,7 +51,7 @@ class CommandFactory:
 
     @staticmethod
     def run_lastfmset_command(update: Update, context: CallbackContext):
-        command = LastfmSetCommand(update, context)
+        command = LastFMSetCommand(update, context)
         command.run()
 
     @staticmethod
@@ -61,7 +61,7 @@ class CommandFactory:
 
     @staticmethod
     def run_delete_saved_links_command(update: Update, context: CallbackContext):
-        if update.message.chat.type != 'group':
+        if update.message.chat.type != 'group' and update.message.chat.type != 'supergroup':
             command = DeleteSavedLinksCommand(update, context)
             command.run()
 
@@ -372,7 +372,7 @@ class NowPlayingCommand(Command):
         url_processor.process()
 
 
-class LastfmSetCommand(Command, CreateOrUpdateMixin):
+class LastFMSetCommand(Command, CreateOrUpdateMixin):
     """
     Command /lastfmset
     Sets the given Last.fm username to the current user

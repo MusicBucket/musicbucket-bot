@@ -10,7 +10,9 @@ from bot.db import db
 from bot.messages import MessageProcessor
 from bot.models import Link, Artist, Genre, User, Chat, Album, Track, AlbumArtist, AlbumGenre, ArtistGenre, \
     TrackArtist, LastFMUsername, SavedLink
-from bot.commands import CommandFactory
+from bot.commands import CommandFactory, MusicCommand, MusicFromBeginningCommand, MyMusicCommand, \
+    RecommendationsCommand, NowPlayingCommand, LastFMSetCommand, SavedLinksCommand, DeleteSavedLinksCommand, \
+    StatsCommand
 from bot.search import SearchInline
 
 load_dotenv()
@@ -27,7 +29,8 @@ def _setup_database():
     db.connect()
     db.create_tables(
         [User, Chat, Link, Artist, Album, Track, Genre, AlbumArtist, AlbumGenre, ArtistGenre, TrackArtist,
-         LastFMUsername, SavedLink])
+         LastFMUsername, SavedLink]
+    )
 
 
 def _setup_sentry():
@@ -51,31 +54,32 @@ def main():
 
     # Register commands
     dispatcher.add_handler(
-        CommandHandler('music', CommandFactory.run_music_command, pass_args=True)
+        CommandHandler(MusicCommand.COMMAND, CommandFactory.run_music_command, pass_args=True)
     )
     dispatcher.add_handler(
-        CommandHandler('music_from_beginning', CommandFactory.run_music_from_beginning_command, pass_args=True)
+        CommandHandler(MusicFromBeginningCommand.COMMAND, CommandFactory.run_music_from_beginning_command,
+                       pass_args=True)
     )
     dispatcher.add_handler(
-        CommandHandler('mymusic', CommandFactory.run_my_music_command)
+        CommandHandler(MyMusicCommand.COMMAND, CommandFactory.run_my_music_command)
     )
     dispatcher.add_handler(
-        CommandHandler('recommendations', CommandFactory.run_recommendations_command)
+        CommandHandler(RecommendationsCommand.COMMAND, CommandFactory.run_recommendations_command)
     )
     dispatcher.add_handler(
-        CommandHandler('np', CommandFactory.run_now_playing_command)
+        CommandHandler(NowPlayingCommand.COMMAND, CommandFactory.run_now_playing_command)
     )
     dispatcher.add_handler(
-        CommandHandler('lastfmset', CommandFactory.run_lastfmset_command, pass_args=True)
+        CommandHandler(LastFMSetCommand.COMMAND, CommandFactory.run_lastfmset_command, pass_args=True)
     )
     dispatcher.add_handler(
-        CommandHandler('savedlinks', CommandFactory.run_saved_links_command)
+        CommandHandler(SavedLinksCommand.COMMAND, CommandFactory.run_saved_links_command)
     )
     dispatcher.add_handler(
-        CommandHandler('deletesavedlinks', CommandFactory.run_delete_saved_links_command)
+        CommandHandler(DeleteSavedLinksCommand.COMMAND, CommandFactory.run_delete_saved_links_command)
     )
     dispatcher.add_handler(
-        CommandHandler('stats', CommandFactory.run_stats_command)
+        CommandHandler(StatsCommand.COMMAND, CommandFactory.run_stats_command)
     )
     dispatcher.add_handler(
         InlineQueryHandler(SearchInline)
