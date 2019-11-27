@@ -1,18 +1,24 @@
-Music Bucket Bot
+MusicBucket Bot
 ================
 
-A Telegram Bot that collects **Spotify** music links that users send in
-a chat and shows them by request, with the related info:
+About
+~~~~~~~~
+
+MusicBucket Bot is a Telegram Bot that adds features and possibility to interact with **Spotify** music links that users send in
+a chat.
+
+The bot is able to get information from a Spotify link like:
 
 -  *Artist*
 -  *Album*
 -  *Track*
 -  *Genres*
+-  *Audio preview*
 
 It also integrates with **Last.fm** to retrieve information about your
 user like **Now Playing**.
 
-It has the feature to allow you to save in a personal list the links someones shares in a Chat.
+It has the feature to allow you to **save links that someones shares in a Chat** in a personal list.
 So you can easily track which music you have pending to listen to.
 
 
@@ -36,7 +42,7 @@ Commands
 -  ``/stats`` Retrieves an user list with a links counter for the
    current chat.
 -  ``@music_bucket_bot artist|album|track name`` Search for an artist,
-   an album or a track and add it to the list.
+   an album or a track and send it to the chat.
 
 **Official bot** => ``@music_bucket_bot``
 
