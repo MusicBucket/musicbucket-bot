@@ -61,7 +61,8 @@ class DeleteSavedLinkButton(ButtonMixin):
         """Handles the pulsation of the button"""
         query = update.callback_query
         saved_link_id = cls.get_callback_data(query.data)
-        cls._delete_from_user_saved_links(saved_link_id)
+        if saved_link_id:
+            cls._delete_from_user_saved_links(saved_link_id)
         context.bot.edit_message_reply_markup(
             chat_id=query.message.chat_id,
             message_id=query.message.message_id
@@ -81,4 +82,7 @@ class DeleteSavedLinkButton(ButtonMixin):
             keyboard.append([InlineKeyboardButton(
                 str(saved_link.link), callback_data=f'{cls.CALLBACK_NAME}:{saved_link.id}'
             )])
+        keyboard.append([InlineKeyboardButton(
+            str('Cancel'), callback_data=f'{cls.CALLBACK_NAME}:'
+        )])
         return InlineKeyboardMarkup(keyboard)

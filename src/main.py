@@ -18,7 +18,7 @@ from bot.search import SearchInline
 load_dotenv()
 
 logging.basicConfig(
-    filename='musicbucket-bot.log',
+    # filename='musicbucket-bot.log',
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
