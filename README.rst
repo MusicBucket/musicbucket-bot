@@ -7,7 +7,10 @@ About
 MusicBucket Bot is a Telegram Bot that adds features and possibility to interact with **Spotify** music links that users send in
 a chat.
 
-The bot is able to get information from a Spotify link like:
+It's main feature is to allow you to **save links that someones shares in a Chat** in a personal list.
+So you can easily track which music you have pending to listen to.
+
+When an user sends a link, the bot is able to get information from a Spotify link like:
 
 -  *Artist*
 -  *Album*
@@ -18,8 +21,17 @@ The bot is able to get information from a Spotify link like:
 It also integrates with **Last.fm** to retrieve information about your
 user like **Now Playing**.
 
-It has the feature to allow you to **save links that someones shares in a Chat** in a personal list.
-So you can easily track which music you have pending to listen to.
+Why Telegram?
+_____________
+I chose Telegram because I'm in a few groups where we share music everyday. We soon realized that
+the links we shared in a group were often missed. Therefore, the idea of making a tool for keeping track
+of the music we share started growing so I started developing this bot.
+
+Why Spotify?
+_____________
+At the start the bot supported both Spotify and Deezer, but Spotify is the platform that we use
+mostly, so implementing new features for both platforms is complicated and I decided supporting Spotify
+only.
 
 
 Commands
@@ -47,7 +59,7 @@ Commands
 **Official bot** => ``@music_bucket_bot``
 
 Screenshots
-____________
+~~~~~~~~~~~
 
 .. |screenshot_1| image:: https://github.com/paurieraf/musicbucket-bot/blob/master/images/screenshots/screenshot_1.jpg?raw=True
 .. |screenshot_2| image:: https://github.com/paurieraf/musicbucket-bot/blob/master/images/screenshots/screenshot_2.jpg?raw=True
@@ -62,7 +74,7 @@ ____________
 
 
 Installation
-------------
+~~~~~~~~~~~~
 
 -  Install ``pyenv`` and ``pipenv``
 -  Do ``pipenv install`` inside the folder.
@@ -71,7 +83,7 @@ Installation
 -  Execute ``python main.py``
 
 License
--------
+~~~~~~~
 
 The content of this project is licensed under the GNU/GPLv3 license. See
 LICENSE file.
