@@ -86,8 +86,18 @@ Installation
    with your Telegram and Spotify data.
 -  Execute ``python main.py``
 
+
+Special thanks
+~~~~~~~~~~~~~~
+
+- To Pablo I. for the logo.
+- To the Sonomada (https://sonomada.org/) community.
+
+
 License
 ~~~~~~~
 
 The content of this project is licensed under the GNU/GPLv3 license. See
 LICENSE file.
+
+
