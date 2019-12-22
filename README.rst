@@ -1,6 +1,10 @@
 MusicBucket Bot
 ================
 
+.. |full_logo| image:: https://github.com/paurieraf/musicbucket-bot/blob/master/images/logos/musicbucket_bot_letter_logo_1229x2574.png?raw=True
+
+|full_logo|
+
 About
 ~~~~~~~~
 
