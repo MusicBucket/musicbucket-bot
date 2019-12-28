@@ -24,6 +24,16 @@ class CommandFactory:
     """Handles the execution of the commands"""
 
     @staticmethod
+    def run_start_command(update: Update, context: CallbackContext):
+        command = StartCommand(update, context)
+        command.run()
+
+    @staticmethod
+    def run_help_command(update: Update, context: CallbackContext):
+        command = HelpCommand(update, context)
+        command.run()
+
+    @staticmethod
     def run_music_command(update: Update, context: CallbackContext):
         command = MusicCommand(update, context)
         command.run()
@@ -88,6 +98,60 @@ class Command(ReplyMixin, LoggerMixin):
 
     def get_response(self):
         raise NotImplementedError()
+
+
+class StartCommand(Command):
+    """
+    Command /start
+    Shows a help text of how to use the bot
+    """
+    COMMAND = 'start'
+
+    def get_response(self):
+        return self._build_message(), None
+
+    @staticmethod
+    def _build_message():
+        msg = "Hey! I'm <strong>MusicBucket Bot</strong>. \n\n" \
+              "My main purpose is to help you and your mates to share music between yourselves, with some useful " \
+              "features I have like to <strong>collect Spotify links and displaying information</strong> about what " \
+              "you've sent in a chat. \n" \
+              "Also, you can use me to have a <strong>personal list of saved music</strong> to listen later! \n\n" \
+              "To get more information about how to use me, use the /help command."
+        return msg
+
+
+class HelpCommand(Command):
+    """
+    Command /help
+    Shows a list of the available commands and another useful features of the bot
+    """
+    COMMAND = 'help'
+
+    def get_response(self):
+        return self._build_message(), None
+
+    @staticmethod
+    def _build_message():
+        msg = "I give information about sent Spotify links in a chat. " \
+              "I also give you a button to save this link and check it later! \n\n" \
+              "Here's a list of the available commands: \n" \
+              "-  /music [@username] Retrieves the music shared in the chat from the last week. " \
+              "Grouped by user. Filter by @username optionally. \n" \
+              "-  /music_from_beginning @username Retrieves the music shared in the chat from the beginning " \
+              "of time by an user. \n" \
+              "-  /savedlinks Retrieves a list with your saved links. \n" \
+              "-  /deletesavedlinks Shows a list of buttons for deleting saved link. \n" \
+              "-  /mymusic Retrieves the music that you shared in all the chats. " \
+              "It has to be called from a private conversation. \n" \
+              "-  /recommendations Returns a list of 10 recommended tracks " \
+              "based on the sent albums from the last week. \n" \
+              "-  /np Now Playing. Returns track information about what you are currently playing in Last.fm. \n" \
+              "-  /lastfmset username Sets a Last.fm username to your Telegram user. \n" \
+              "-  /stats Retrieves an user list with a links counter for the current chat. \n" \
+              "-  @music_bucket_bot artist|album|track name Search for an artist, an album or a track " \
+              "and send it to the chat. \n\n"
+        return msg
 
 
 class MusicCommand(Command):

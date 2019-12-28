@@ -200,6 +200,18 @@ class LastFMUsername(BaseModel):
     username = CharField(unique=True)
 
 
+class ChatLink(BaseModel):
+    """
+    TODO: Work in Progress
+    Represents a link sent in a chat
+    """
+    id = AutoField()
+    sent_at = DateTimeField()
+    chat = ForeignKeyField(Chat, backref='links')
+    link = ForeignKeyField(Link, backref='chats')
+    sent_by = ForeignKeyField(User, backref='links')
+
+
 class SavedLink(BaseModel):
     id = AutoField()
     user = ForeignKeyField(User, backref='saved_links')

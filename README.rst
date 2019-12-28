@@ -40,7 +40,6 @@ only.
 
 Commands
 ~~~~~~~~
-
 -  ``/music [@username]`` Retrieves the music shared in the chat from
    the last week. Grouped by user. Filter by @username optionally.
 -  ``/music_from_beginning @username`` Retrieves the music shared in the
@@ -57,6 +56,7 @@ Commands
    user.
 -  ``/stats`` Retrieves an user list with a links counter for the
    current chat.
+-  ``/help`` Retrieves a list of available commands and bot features.
 -  ``@music_bucket_bot artist|album|track name`` Search for an artist,
    an album or a track and send it to the chat.
 

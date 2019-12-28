@@ -12,7 +12,7 @@ from bot.models import Link, Artist, Genre, User, Chat, Album, Track, AlbumArtis
     TrackArtist, LastFMUsername, SavedLink
 from bot.commands import CommandFactory, MusicCommand, MusicFromBeginningCommand, MyMusicCommand, \
     RecommendationsCommand, NowPlayingCommand, LastFMSetCommand, SavedLinksCommand, DeleteSavedLinksCommand, \
-    StatsCommand
+    StatsCommand, StartCommand, HelpCommand
 from bot.search import SearchInline
 
 load_dotenv()
@@ -59,6 +59,12 @@ def main():
     dispatcher = updater.dispatcher
 
     # Register commands
+    dispatcher.add_handler(
+        CommandHandler(StartCommand.COMMAND, CommandFactory.run_start_command)
+    )
+    dispatcher.add_handler(
+        CommandHandler(HelpCommand.COMMAND, CommandFactory.run_help_command)
+    )
     dispatcher.add_handler(
         CommandHandler(MusicCommand.COMMAND, CommandFactory.run_music_command, pass_args=True)
     )
