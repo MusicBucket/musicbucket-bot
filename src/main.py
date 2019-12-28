@@ -17,11 +17,18 @@ from bot.search import SearchInline
 
 load_dotenv()
 
-logging.basicConfig(
-    filename='musicbucket-bot.log',
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
+if getenv('DEBUG', False):
+    logging.basicConfig(
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        level=logging.INFO
+    )
+else:
+    logging.basicConfig(
+        filename='musicbucket-bot.log',
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        level=logging.INFO
+    )
+
 log = logging.getLogger(__name__)
 
 
@@ -29,8 +36,7 @@ def _setup_database():
     db.connect()
     db.create_tables(
         [User, Chat, Link, Artist, Album, Track, Genre, AlbumArtist, AlbumGenre, ArtistGenre, TrackArtist,
-         LastFMUsername, SavedLink]
-    )
+         LastFMUsername, SavedLink])
 
 
 def _setup_sentry():
