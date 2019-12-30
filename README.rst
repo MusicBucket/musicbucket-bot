@@ -91,7 +91,7 @@ Special thanks
 ~~~~~~~~~~~~~~
 
 - To Pablo I. for the logo.
-- To the Sonomada (https://sonomada.org/) community.
+- To the Sonomada (https://sonomada.org/) community and its group in Telegram (https://t.me/Sonomada_gang) where we use actively and test the bot and propose new features.
 
 
 License
