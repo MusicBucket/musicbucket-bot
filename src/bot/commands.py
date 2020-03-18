@@ -11,7 +11,7 @@ from telegram.ext import CallbackContext
 from bot.buttons import DeleteSavedLinkButton
 from bot.logger import LoggerMixin
 from bot.messages import UrlProcessor
-from bot.models import Chat, Link, Album, LastFMUsername, User, CreateOrUpdateMixin, SavedLink, Track, Artist
+from bot.models import Chat, Link, Album, LastFMUsername, User, CreateOrUpdateMixin, SavedLink, Track, Artist, ChatLink
 from bot.music.lastfm import LastFMClient
 from bot.music.music import LinkType, EntityType
 from bot.music.spotify import SpotifyClient
@@ -189,26 +189,31 @@ class MusicCommand(Command):
         return msg
 
     def _get_links(self):
+        # TODO: Move to model
         links = Link.select() \
-            .join(Chat) \
+            .join(ChatLink, on=(ChatLink.link == Link.id)) \
+            .join(Chat, on=(Chat.id == ChatLink.chat)) \
             .where(Chat.id == self.update.message.chat_id) \
-            .where((Link.created_at >= self.LAST_WEEK) | (Link.updated_at >= self.LAST_WEEK)) \
-            .order_by(Link.updated_at.asc(), Link.created_at.asc())
+            .where((ChatLink.sent_at >= self.LAST_WEEK)) \
+            .order_by(ChatLink.sent_at.asc())
         return links
 
     def _get_links_from_user(self):
+        # TODO: Move to model
         username = self.args[0]
         username = username.replace('@', '')
         links = Link.select() \
-            .join(Chat, on=(Chat.id == Link.chat)) \
-            .join(User, on=(User.id == Link.user)) \
+            .join(ChatLink, on=(ChatLink.link == Link.id)) \
+            .join(User, on=(User.id == ChatLink.sent_by)) \
+            .join(Chat, on=(Chat.id == ChatLink.chat)) \
             .where((Chat.id == self.update.message.chat_id) & (User.username == username)) \
-            .where((Link.created_at >= self.LAST_WEEK) | (Link.updated_at >= self.LAST_WEEK)) \
-            .order_by(Link.updated_at.asc(), Link.created_at.asc())
+            .where((ChatLink.sent_at >= self.LAST_WEEK)) \
+            .order_by(ChatLink.sent_at.asc())
         return links
 
     @staticmethod
     def _group_links_by_user(links):
+        # TODO: Move to model
         last_week_links = defaultdict(list)
         for link in links:
             last_week_links[link.user].append(link)
@@ -254,17 +259,20 @@ class MusicFromBeginningCommand(Command):
         return msg
 
     def _get_links_from_user(self):
+        # TODO: Move to model
         username = self.args[0]
         username = username.replace('@', '')
         links = Link.select() \
-            .join(Chat, on=(Chat.id == Link.chat)) \
-            .join(User, on=(User.id == Link.user)) \
+            .join(ChatLink, on=(ChatLink.link == Link.id)) \
+            .join(User, on=(User.id == ChatLink.sent_by)) \
+            .join(Chat, on=(Chat.id == ChatLink.chat)) \
             .where((Chat.id == self.update.message.chat_id) & (User.username == username)) \
-            .order_by(Link.updated_at.asc(), Link.created_at.asc())
+            .order_by(ChatLink.sent_at.asc())
         return links
 
     @staticmethod
     def _group_links_by_user(links):
+        # TODO: Move to model
         all_time_links = defaultdict(list)
         for link in links:
             all_time_links[link.user].append(link)
@@ -304,10 +312,11 @@ class MyMusicCommand(Command):
 
     def _get_all_time_links_from_user(self):
         links = Link.select() \
-            .join(User, on=(User.id == Link.user)) \
-            .join(Chat, on=(Chat.id == Link.chat)) \
+            .join(ChatLink, on=(ChatLink.link == Link.id)) \
+            .join(User, on=(User.id == ChatLink.sent_by)) \
+            .join(Chat, on=(Chat.id == ChatLink.chat)) \
             .where(User.id == self.update.message.from_user.id) \
-            .order_by(Link.updated_at.asc(), Link.created_at.asc())
+            .order_by(ChatLink.sent_at.asc())
         return links
 
 
@@ -338,11 +347,12 @@ class RecommendationsCommand(Command):
     def _get_album_seeds(self):
         album_seeds = Album.select() \
             .join(Link) \
+            .join(ChatLink) \
             .join(Chat) \
             .where(Chat.id == self.update.message.chat_id) \
-            .where((Link.created_at >= self.LAST_WEEK) | (Link.updated_at >= self.LAST_WEEK)) \
+            .where((ChatLink.sent_at >= self.LAST_WEEK)) \
             .where(Link.link_type == LinkType.ALBUM.value) \
-            .order_by(Link.updated_at.asc(), Link.created_at.asc())
+            .order_by(ChatLink.sent_at.asc())
         return album_seeds
 
     @staticmethod
@@ -556,10 +566,10 @@ class StatsCommand(Command):
         return msg
 
     def _get_stats_by_user(self):
-        stats_by_user = User.select(User, fn.Count(Link.url).alias('links')) \
-            .join(Link, on=Link.user) \
-            .join(Chat, on=Link.chat) \
-            .where(Link.chat.id == self.update.message.chat_id) \
+        stats_by_user = User.select(User, fn.Count(ChatLink.id).alias('links')) \
+            .join(ChatLink, on=ChatLink.sent_by) \
+            .join(Chat, on=ChatLink.chat) \
+            .where(Chat.id == self.update.message.chat_id) \
             .group_by(User) \
             .order_by(SQL('links').desc())
         return stats_by_user

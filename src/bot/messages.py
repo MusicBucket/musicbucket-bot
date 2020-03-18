@@ -49,7 +49,7 @@ class UrlProcessor(ReplyMixin, LoggerMixin, SpotifyUrlMixin, CreateOrUpdateMixin
                 url=cleaned_url,
                 link_type=link_type.value,
                 user=user,
-                chat=chat
+                chat=chat,
             )
 
             spotify_track = None
@@ -67,7 +67,7 @@ class UrlProcessor(ReplyMixin, LoggerMixin, SpotifyUrlMixin, CreateOrUpdateMixin
                 spotify_track = self.spotify_client.client.track(entity_id)
                 track = self.save_track(spotify_track)
                 link.track = track
-            link, updated = self.save_link(link)
+            link, updated = self.save_link(link, user, chat)
 
             return self._build_message(link, spotify_track, updated)
 

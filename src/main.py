@@ -9,7 +9,7 @@ from bot.buttons import SaveLinkButton, DeleteSavedLinkButton
 from bot.db import db
 from bot.messages import MessageProcessor
 from bot.models import Link, Artist, Genre, User, Chat, Album, Track, AlbumArtist, AlbumGenre, ArtistGenre, \
-    TrackArtist, LastFMUsername, SavedLink
+    TrackArtist, LastFMUsername, SavedLink, ChatLink
 from bot.commands import CommandFactory, MusicCommand, MusicFromBeginningCommand, MyMusicCommand, \
     RecommendationsCommand, NowPlayingCommand, LastFMSetCommand, SavedLinksCommand, DeleteSavedLinksCommand, \
     StatsCommand, StartCommand, HelpCommand
@@ -35,7 +35,7 @@ log = logging.getLogger(__name__)
 def _setup_database():
     db.connect()
     db.create_tables(
-        [User, Chat, Link, Artist, Album, Track, Genre, AlbumArtist, AlbumGenre, ArtistGenre, TrackArtist,
+        [User, Chat, Link, ChatLink, Artist, Album, Track, Genre, AlbumArtist, AlbumGenre, ArtistGenre, TrackArtist,
          LastFMUsername, SavedLink])
 
 
@@ -69,8 +69,9 @@ def main():
         CommandHandler(MusicCommand.COMMAND, CommandFactory.run_music_command, pass_args=True)
     )
     dispatcher.add_handler(
-        CommandHandler(MusicFromBeginningCommand.COMMAND, CommandFactory.run_music_from_beginning_command,
-                       pass_args=True)
+        CommandHandler(
+            MusicFromBeginningCommand.COMMAND, CommandFactory.run_music_from_beginning_command, pass_args=True
+        )
     )
     dispatcher.add_handler(
         CommandHandler(MyMusicCommand.COMMAND, CommandFactory.run_my_music_command)

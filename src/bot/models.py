@@ -142,14 +142,14 @@ class Link(BaseModel, EmojiModelMixin):
     link_type = CharField()
     streaming_service_type = CharField(default=StreamingServiceType.SPOTIFY.value)
     created_at = DateTimeField()
-    updated_at = DateTimeField(null=True)
-    times_sent = IntegerField(default=1)
     artist = ForeignKeyField(Artist, backref='links', null=True)
     album = ForeignKeyField(Album, backref='links', null=True)
     track = ForeignKeyField(Track, backref='links', null=True)
-    user = ForeignKeyField(User, backref='links')
-    chat = ForeignKeyField(Chat, backref='links')
-    last_update_user = ForeignKeyField(User, backref='updated_links', null=True)
+    updated_at = DateTimeField(null=True)  # deprecated field
+    times_sent = IntegerField(default=1)  # deprecated field
+    user = ForeignKeyField(User, backref='links')  # deprecated field
+    chat = ForeignKeyField(Chat, backref='links')  # deprecated field
+    last_update_user = ForeignKeyField(User, backref='updated_links', null=True)  # deprecated field
 
     @property
     def genres(self):
@@ -174,6 +174,7 @@ class Link(BaseModel, EmojiModelMixin):
 
     def apply_update(self, user):
         """
+        DEPRECATED
         Set the update fields to the current values
         """
         self.updated_at = datetime.datetime.now()
@@ -207,15 +208,29 @@ class ChatLink(BaseModel):
     """
     id = AutoField()
     sent_at = DateTimeField()
-    chat = ForeignKeyField(Chat, backref='links')
-    link = ForeignKeyField(Link, backref='chats')
-    sent_by = ForeignKeyField(User, backref='links')
+    chat = ForeignKeyField(Chat, backref='links', on_delete='CASCADE')
+    link = ForeignKeyField(Link, backref='chats', on_delete='CASCADE')
+    sent_by = ForeignKeyField(User, backref='links', on_delete='CASCADE')
+
+    def __str__(self):
+        if self.link.link_type == LinkType.ARTIST.value:
+            return self.link.artist.name
+        elif self.link.link_type == LinkType.ALBUM.value:
+            return "{} - {}".format(
+                self.link.album.get_first_artist().name if self.link.album.get_first_artist() else '',
+                self.link.album.name
+            )
+        elif self.link.link_type == LinkType.TRACK.value:
+            return "{} by {}".format(
+                self.link.track.name,
+                self.link.track.artists.first().name if self.link.track.get_first_artist() else '',
+            )
 
 
 class SavedLink(BaseModel):
     id = AutoField()
-    user = ForeignKeyField(User, backref='saved_links')
-    link = ForeignKeyField(Link, backref='saved_links')
+    user = ForeignKeyField(User, backref='saved_links', on_delete='CASCADE')
+    link = ForeignKeyField(Link, backref='saved_links', on_delete='CASCADE')
     saved_at = DateTimeField()
     deleted_at = DateTimeField(null=True)
 
@@ -230,22 +245,22 @@ class CreateOrUpdateMixin:
     TODO: Replace get_or_create for insert_or_replace or equivalent to create_or_update
     """
 
-    def save_link(self, link):
-        """Update the link if it exists for a chat, create if it doesn't exist"""
+    def save_link(self, link, sent_by, chat):
+        """Create if it doesn't exist and it associates"""
         updated = False
-        existent_link = Link.get_or_none((Link.url == link.url) & (Link.chat == link.chat))
-        if existent_link:
-            update_user = link.user
-            link = existent_link
-            link.apply_update(update_user)
-            link.save()
-            updated = True
-            self.log_db_operation(self.DBOperation.UPDATE, link)
-        else:
+        existent_link = Link.get_or_none(Link.url == link.url)
+        if not existent_link:
             link.created_at = datetime.datetime.now()
             link.save(force_insert=True)
             self.log_db_operation(self.DBOperation.CREATE, link)
-
+        else:
+            link = existent_link
+        ChatLink.create(
+            sent_at=datetime.datetime.now(),
+            chat=chat,
+            link=link,
+            sent_by=sent_by
+        )
         return link, updated
 
     def save_chat(self, update):

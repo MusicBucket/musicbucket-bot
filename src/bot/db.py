@@ -4,6 +4,7 @@ from os import getenv
 from dotenv import load_dotenv
 
 from peewee import PostgresqlDatabase
+from playhouse.migrate import PostgresqlMigrator
 
 log = logging.getLogger(__name__)
 
@@ -15,3 +16,4 @@ db = PostgresqlDatabase(getenv('DB_NAME'),
                         host=getenv('DB_HOST'),
                         port=getenv('DB_PORT'),
                         autorollback=True)
+db_migrator = PostgresqlMigrator(db)
