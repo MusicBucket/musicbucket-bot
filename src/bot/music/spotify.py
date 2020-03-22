@@ -5,6 +5,7 @@ import spotipy
 from dotenv import load_dotenv
 from spotipy.oauth2 import SpotifyClientCredentials
 
+from bot.models import Artist, Album
 from bot.music.music import LinkType, LinkInfo, EntityType
 
 log = logging.getLogger(__name__)
@@ -112,16 +113,27 @@ class SpotifyClient(SpotifyUrlMixin):
 
         return link_info
 
-    def get_recommendations(self, seed_artists):
+    def get_recommendations(self, seed_artists: []):
         """Get track recommendations based on a list of max. 5 artist seeds"""
         artists_ids = [artist.id for artist in seed_artists]
         tracks = self.client.recommendations(seed_artists=artists_ids, limit=self.RECOMMENDATIONS_NUMBER)
         return tracks
 
-    def get_artist_top_track(self, artist):
+    def get_all_artist_albums(self, artist: Artist):
+        albums_response = self.client.artist_albums(artist.id, album_type='album,single,compilation', limit=50)
+        albums_simpl = albums_response['items']
+        while albums_response['next']:
+            albums_response = self.client.next(albums_response)
+            albums_simpl.extend(albums_response['items'])
+        albums_full = []
+        for album_simpl in albums_simpl:
+            albums_full.append(self.client.album(album_simpl['id']))
+        return albums_full
+
+    def get_artist_top_track(self, artist: Artist):
         top_track = self.client.artist_top_tracks(artist.id)['tracks'][0]
         return top_track
 
-    def get_album_first_track(self, album):
+    def get_album_first_track(self, album: Album):
         first_track = self.client.album_tracks(album.id)['items'][0]
         return first_track

@@ -2,7 +2,7 @@ import logging
 import re
 
 from emoji import emojize
-from telegram import Update, InlineKeyboardButton
+from telegram import Update
 from telegram.ext import CallbackContext
 
 from bot.buttons import SaveLinkButton

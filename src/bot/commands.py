@@ -8,10 +8,11 @@ from peewee import fn, SQL
 from telegram import Update
 from telegram.ext import CallbackContext
 
-from bot.buttons import DeleteSavedLinkButton
+from bot.buttons import DeleteSavedLinkButton, UnfollowArtistButton
 from bot.logger import LoggerMixin
 from bot.messages import UrlProcessor
-from bot.models import Chat, Link, Album, LastFMUsername, User, CreateOrUpdateMixin, SavedLink, Track, Artist, ChatLink
+from bot.models import Chat, Link, Album, LastFMUsername, User, CreateOrUpdateMixin, SavedLink, Track, Artist, ChatLink, \
+    FollowedArtist
 from bot.music.lastfm import LastFMClient
 from bot.music.music import LinkType, EntityType
 from bot.music.spotify import SpotifyClient
@@ -76,6 +77,27 @@ class CommandFactory:
             command.run()
 
     @staticmethod
+    def run_followed_artists_command(update: Update, context: CallbackContext):
+        command = FollowedArtistsCommand(update, context)
+        command.run()
+
+    @staticmethod
+    def run_follow_artist_command(update: Update, context: CallbackContext):
+        command = FollowArtistCommand(update, context)
+        command.run()
+
+    @staticmethod
+    def run_unfollow_artists_command(update: Update, context: CallbackContext):
+        if update.message.chat.type != 'group' and update.message.chat.type != 'supergroup':
+            command = UnfollowArtistsCommand(update, context)
+            command.run()
+
+    @staticmethod
+    def run_check_artist_new_music_releases_command(update: Update, context: CallbackContext):
+        command = CheckArtistsNewMusicReleasesCommand(update, context)
+        command.run()
+
+    @staticmethod
     def run_stats_command(update: Update, context: CallbackContext):
         command = StatsCommand(update, context)
         command.run()
@@ -138,18 +160,22 @@ class HelpCommand(Command):
               "Here's a list of the available commands: \n" \
               "-  /music [@username] Retrieves the music shared in the chat from the last week. " \
               "Grouped by user. Filter by @username optionally. \n" \
-              "-  /music_from_beginning @username Retrieves the music shared in the chat from the beginning " \
+              "-  /music_from_beginning @username Retrieves the music shared in the chat from the beginning. " \
               "of time by an user. \n" \
               "-  /savedlinks Retrieves a list with your saved links. \n" \
               "-  /deletesavedlinks Shows a list of buttons for deleting saved link. \n" \
+              "-  /followedartists Return a list of followed artists. \n" \
+              "-  /followartist spotify_artist_url Starts following an artist to be notified about album releases. \n" \
+              "-  /unfollowartists Shows a list of buttons for unfollowing artists. \n" \
+              "-  /checkartistsnewalbumreleases Shows a list of buttons for checking new album releases. \n" \
               "-  /mymusic Retrieves the music that you shared in all the chats. " \
               "It has to be called from a private conversation. \n" \
-              "-  /recommendations Returns a list of 10 recommended tracks " \
+              "-  /recommendations Returns a list of 10 recommended tracks. " \
               "based on the sent albums from the last week. \n" \
               "-  /np Now Playing. Returns track information about what you are currently playing in Last.fm. \n" \
               "-  /lastfmset username Sets a Last.fm username to your Telegram user. \n" \
               "-  /stats Retrieves an user list with a links counter for the current chat. \n" \
-              "-  @music_bucket_bot artist|album|track name Search for an artist, an album or a track " \
+              "-  @music_bucket_bot artist|album|track name Search for an artist, an album or a track. " \
               "and send it to the chat. \n\n"
         return msg
 
@@ -460,10 +486,9 @@ class LastFMSetCommand(Command, CreateOrUpdateMixin):
         lastfm_username = self._set_lastfm_username(user)
         return self._build_message(lastfm_username), None
 
-    @staticmethod
-    def _build_message(lastfm_username):
+    def _build_message(self, lastfm_username):
         if not lastfm_username:
-            return 'Command usage /lastfmset username'
+            return self._help_message()
         return f"<strong>{lastfm_username}</strong>'s Last.fm username set correctly"
 
     def _set_lastfm_username(self, user):
@@ -484,11 +509,15 @@ class LastFMSetCommand(Command, CreateOrUpdateMixin):
             lastfm_username.save()
         return username
 
+    @staticmethod
+    def _help_message():
+        return 'Command usage: /lastfmset username'
+
 
 class SavedLinksCommand(Command):
     """
     Command /savedlinks
-    Shows the links that the user saved
+    Shows a list of the links that the user saved
     """
     COMMAND = 'savedlinks'
 
@@ -517,7 +546,7 @@ class SavedLinksCommand(Command):
 class DeleteSavedLinksCommand(Command):
     """
     Command /deletesavedlinks
-    Shows a list of buttons with the saved links and deletes the when clicking
+    Shows a list of buttons with the saved links and deletes them when clicking
     """
     COMMAND = 'deletesavedlinks'
 
@@ -541,6 +570,184 @@ class DeleteSavedLinksCommand(Command):
             .where(
             (SavedLink.user_id == self.update.message.from_user.id) & (SavedLink.deleted_at.is_null())))
         return saved_links_by_user
+
+
+class FollowArtistMixin:
+    @staticmethod
+    def _get_followed_artists_by_user(update: Update):
+        followed_artists_by_user = (
+            FollowedArtist.select().join(Artist, on=FollowedArtist.artist_id == Artist.id).join(User,
+                                                                                                on=FollowedArtist.user_id == User.id).where(
+                FollowedArtist.user_id == update.message.from_user.id))
+        return followed_artists_by_user
+
+    @staticmethod
+    def _not_following_any_artist_message():
+        return 'You are not following any artist'
+
+
+class FollowedArtistsCommand(FollowArtistMixin, Command):
+    """
+    Command /followedartists
+    Shows a list of the followed artists the request's user
+    """
+    COMMAND = 'followedartists'
+
+    def get_response(self):
+        followed_artists = self._get_followed_artists_by_user(self.update)
+        return self._build_message(followed_artists), None
+
+    def _build_message(self, followed_artists):
+        if not followed_artists:
+            return self._not_following_any_artist_message()
+
+        msg = '<strong>Following artists:</strong> \n'
+        for followed_artist in followed_artists:
+            msg += f'- {followed_artist.artist.get_emoji()} ' \
+                   f'<a href="{followed_artist.artist.spotify_url}">{str(followed_artist.artist)}</a> ' \
+                   f'Followed at: {followed_artist.followed_at.strftime("%Y/%m/%d")}\n'
+        return msg
+
+
+class FollowArtistCommand(CreateOrUpdateMixin, Command):
+    """
+    Command /followartist
+    Allows user to follow an artist and be notified when they release an album
+    """
+    COMMAND = 'followartist'
+
+    def __init__(self, update, context):
+        super().__init__(update, context)
+        self.spotify_client = SpotifyClient()
+
+    def get_response(self):
+        if not self.args:
+            return self._help_message()
+        url = self.args[0]
+        try:
+            artist = self._process_artist_url(url)
+        except ValueError:
+            log.exception('Error trying to process artist url')
+            return self._error_invalid_link_message()
+        user = self.save_user(self.update)
+        followed_artist, was_created = self._follow_artist(artist, user)
+        return self._build_message(followed_artist, was_created), None
+
+    def _follow_artist(self, artist: Artist, user: User) -> FollowedArtist:
+        return self.save_followed_artist(artist, user)
+
+    def _process_artist_url(self, url: str) -> Artist:
+        url = self._url_cleaning_and_validations(url)
+        artist_id = self.spotify_client.get_entity_id_from_url(url)
+        spotify_artist = self.spotify_client.client.artist(artist_id)
+        return self.save_artist(spotify_artist)
+
+    def _url_cleaning_and_validations(self, url: str) -> str:
+        if not self.spotify_client.is_valid_url(url):
+            raise ValueError(self._error_invalid_link_message())
+        if self.spotify_client.get_link_type(url) != LinkType.ARTIST:
+            raise ValueError(self._error_invalid_link_message())
+        cleaned_url = self.spotify_client.clean_url(url)
+        return cleaned_url
+
+    @staticmethod
+    def _error_invalid_link_message():
+        return 'Invalid artist link'
+
+    @staticmethod
+    def _help_message():
+        return 'Command usage:  /followartist spotify_artist_url'
+
+    @staticmethod
+    def _build_message(followed_artist: FollowedArtist, was_created: bool) -> str:
+        if not was_created:
+            return 'You are already following this artist'
+        msg = f'<strong>Followed artist:</strong> {followed_artist.artist.name}. \n'
+        msg += 'You will be aware of it\'s albums releases'
+        return msg
+
+
+class UnfollowArtistsCommand(FollowArtistMixin, Command):
+    """
+    Command /unfollowartist
+    Shows a list of buttons with followed artists and deletes them when clicking
+    """
+    COMMAND = 'unfollowartists'
+
+    def get_response(self):
+        keyboard = self._build_keyboard()
+        if not keyboard:
+            return self._not_following_any_artist_message(), None
+        return 'Choose an artist to unfollow:', keyboard
+
+    def _build_keyboard(self):
+        followed_artists = self._get_followed_artists_by_user(self.update)
+        if not followed_artists:
+            return None
+        return UnfollowArtistButton.get_keyboard_markup(followed_artists)
+
+
+class CheckArtistsNewMusicReleasesCommand(FollowArtistMixin, CreateOrUpdateMixin, Command):
+    """
+    Command /checkartistsnewmusicreleases
+    Shows a list of buttons with followed artists for checking their new album releases when clicking
+    """
+    COMMAND = 'checkartistsnewmusicreleases'
+
+    def __init__(self, update: Update, context: CallbackContext):
+        super().__init__(update, context)
+        self.spotify_client = SpotifyClient()
+
+    def get_response(self):
+        followed_artists = self._get_followed_artists_by_user(self.update)
+        if not followed_artists:
+            return self._not_following_any_artist_message()
+        self._update_followed_artists_albums(followed_artists)
+        message = self._build_message(followed_artists), None
+        self._update_followed_artists_last_lookup(followed_artists)
+        return message
+
+    @staticmethod
+    def _update_followed_artists_last_lookup(followed_artists: []):
+        for followed_artist in followed_artists:
+            followed_artist.last_lookup = datetime.datetime.now()
+            followed_artist.save()
+
+    def _update_followed_artists_albums(self, followed_artists: []):
+        for followed_artist in followed_artists:
+            spotify_artist_albums = self.spotify_client.get_all_artist_albums(followed_artist.artist)
+            for spotify_album in spotify_artist_albums:
+                self.save_album(spotify_album)
+
+    def _build_message(self, followed_artists: []) -> str:
+        if not followed_artists:
+            return self._not_following_any_artist_message()
+        new_albums_found = False
+        for followed_artist in followed_artists:
+            new_artist_albums = self._extract_new_artist_albums(followed_artist)
+            if not new_artist_albums:
+                continue
+            new_albums_found = True
+            msg = f'Found new {followed_artist.artist.name} music: \n'
+            for new_album in new_artist_albums:
+                msg += f'    - <a href="">{new_album.name} ({new_album.album_type})</a> ' \
+                       f'Released at: {new_album.release_date.strftime("%Y/%m/%d")} \n'
+            return msg
+        if not new_albums_found:
+            return self._no_new_music_message()
+
+    @staticmethod
+    def _extract_new_artist_albums(followed_artist: FollowedArtist) -> []:
+        last_artist_lookup = followed_artist.last_lookup
+        new_albums = []
+        for album in followed_artist.artist.albums:
+            if last_artist_lookup and album.release_date >= last_artist_lookup.date():
+                new_albums.append(album)
+        return new_albums
+
+    @staticmethod
+    def _no_new_music_message():
+        return 'There is no new music of your followed artists'
 
 
 class StatsCommand(Command):

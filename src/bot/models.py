@@ -3,7 +3,7 @@ import datetime
 
 from emoji import emojize
 from peewee import Model, CharField, DateTimeField, IntegerField, ForeignKeyField, ManyToManyField, \
-    BooleanField, AutoField
+    BooleanField, AutoField, DateField
 
 from bot.db import db
 from bot.music.music import StreamingServiceType, LinkType
@@ -66,6 +66,9 @@ class Artist(BaseModel, EmojiModelMixin):
     uri = CharField()
     genres = ManyToManyField(Genre, backref='artists')
 
+    def __str__(self):
+        return self.name
+
     @classmethod
     def get_emoji(cls):
         return emojize(cls.EMOJI, use_aliases=True)
@@ -90,13 +93,28 @@ class Album(BaseModel, EmojiModelMixin):
     spotify_url = CharField(null=True)
     album_type = CharField(null=True)
     uri = CharField()
+    release_date = DateField()
+    release_date_precision = CharField(null=True)
+
     genres = ManyToManyField(Genre, backref='albums')
     artists = ManyToManyField(Artist, backref='albums')
+
+    def __str__(self):
+        return self.name
 
     def get_first_artist(self):
         if self.artists:
             return self.artists.first()
         return None
+
+    @staticmethod
+    def parse_release_date(release_date: str, release_date_precision) -> datetime.date:
+        if release_date_precision == 'day':
+            return datetime.datetime.strptime(release_date, '%Y-%m-%d').date()
+        elif release_date_precision == 'month':
+            return datetime.datetime.strptime(release_date, '%Y-%m').date()
+        elif release_date_precision == 'year':
+            return datetime.datetime.strptime(release_date, '%Y').date()
 
     @classmethod
     def get_emoji(cls):
@@ -122,6 +140,9 @@ class Track(BaseModel, EmojiModelMixin):
     uri = CharField()
     album = ForeignKeyField(Album, backref='tracks')
     artists = ManyToManyField(Artist, backref='tracks')
+
+    def __str__(self):
+        return self.name
 
     def get_first_artist(self):
         if self.artists:
@@ -240,6 +261,17 @@ class SavedLink(BaseModel):
         )
 
 
+class FollowedArtist(BaseModel):
+    id = AutoField()
+    user = ForeignKeyField(User, backref='followed_artists', on_delete='CASCADE')
+    artist = ForeignKeyField(Artist, backref='followed_by', on_delete='CASCADE')
+    followed_at = DateTimeField()
+    last_lookup = DateTimeField(null=True)
+
+    def __str__(self):
+        return f'{self.user.username or self.user.first_name} ({self.user.id}) - {self.artist.name} ({self.artist.id})'
+
+
 class CreateOrUpdateMixin:
     """
     TODO: Replace get_or_create for insert_or_replace or equivalent to create_or_update
@@ -325,7 +357,13 @@ class CreateOrUpdateMixin:
                 'popularity': spotify_album['popularity'],
                 'href': spotify_album['href'],
                 'spotify_url': spotify_album['external_urls']['spotify'],
-                'uri': spotify_album['uri']})
+                'uri': spotify_album['uri'],
+                'album_type': spotify_album['album_type'],
+                'release_date': Album.parse_release_date(
+                    spotify_album['release_date'], spotify_album['release_date_precision']
+                ),
+                'release_date_precision': spotify_album['release_date_precision'],
+            })
 
         if was_created:
             saved_artists = []
@@ -376,3 +414,14 @@ class CreateOrUpdateMixin:
             saved_track.save()
             self.log_db_operation(self.DBOperation.CREATE, saved_track)
         return saved_track
+
+    def save_followed_artist(self, artist: Artist, user: User):
+        saved_followed_artist, was_created = FollowedArtist.get_or_create(
+            user=user,
+            artist=artist,
+            defaults={
+                'followed_at': datetime.datetime.now()
+            })
+        if was_created:
+            self.log_db_operation(self.DBOperation.CREATE, saved_followed_artist)
+        return saved_followed_artist, was_created

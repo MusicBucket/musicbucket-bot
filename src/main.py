@@ -5,14 +5,15 @@ from dotenv import load_dotenv
 from os import getenv
 import logging
 
-from bot.buttons import SaveLinkButton, DeleteSavedLinkButton
+from bot.buttons import SaveLinkButton, DeleteSavedLinkButton, UnfollowArtistButton
 from bot.db import db
 from bot.messages import MessageProcessor
 from bot.models import Link, Artist, Genre, User, Chat, Album, Track, AlbumArtist, AlbumGenre, ArtistGenre, \
-    TrackArtist, LastFMUsername, SavedLink, ChatLink
+    TrackArtist, LastFMUsername, SavedLink, ChatLink, FollowedArtist
 from bot.commands import CommandFactory, MusicCommand, MusicFromBeginningCommand, MyMusicCommand, \
     RecommendationsCommand, NowPlayingCommand, LastFMSetCommand, SavedLinksCommand, DeleteSavedLinksCommand, \
-    StatsCommand, StartCommand, HelpCommand
+    StatsCommand, StartCommand, HelpCommand, FollowArtistCommand, FollowedArtistsCommand, UnfollowArtistsCommand, \
+    CheckArtistsNewMusicReleasesCommand
 from bot.search import SearchInline
 
 load_dotenv()
@@ -36,7 +37,7 @@ def _setup_database():
     db.connect()
     db.create_tables(
         [User, Chat, Link, ChatLink, Artist, Album, Track, Genre, AlbumArtist, AlbumGenre, ArtistGenre, TrackArtist,
-         LastFMUsername, SavedLink])
+         LastFMUsername, SavedLink, FollowedArtist])
 
 
 def _setup_sentry():
@@ -92,6 +93,20 @@ def main():
         CommandHandler(DeleteSavedLinksCommand.COMMAND, CommandFactory.run_delete_saved_links_command)
     )
     dispatcher.add_handler(
+        CommandHandler(FollowedArtistsCommand.COMMAND, CommandFactory.run_followed_artists_command)
+    )
+    dispatcher.add_handler(
+        CommandHandler(FollowArtistCommand.COMMAND, CommandFactory.run_follow_artist_command, pass_args=True)
+    )
+    dispatcher.add_handler(
+        CommandHandler(UnfollowArtistsCommand.COMMAND, CommandFactory.run_unfollow_artists_command)
+    )
+    dispatcher.add_handler(
+        CommandHandler(
+            CheckArtistsNewMusicReleasesCommand.COMMAND, CommandFactory.run_check_artist_new_music_releases_command
+        )
+    )
+    dispatcher.add_handler(
         CommandHandler(StatsCommand.COMMAND, CommandFactory.run_stats_command)
     )
     dispatcher.add_handler(
@@ -102,6 +117,9 @@ def main():
     )
     dispatcher.add_handler(
         CallbackQueryHandler(DeleteSavedLinkButton.handle, pattern=f'{DeleteSavedLinkButton.CALLBACK_NAME}')
+    )
+    dispatcher.add_handler(
+        CallbackQueryHandler(UnfollowArtistButton.handle, pattern=f'{UnfollowArtistButton.CALLBACK_NAME}')
     )
 
     # Non command handlers
