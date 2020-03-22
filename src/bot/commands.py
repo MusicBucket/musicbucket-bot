@@ -622,7 +622,7 @@ class FollowArtistCommand(CreateOrUpdateMixin, Command):
 
     def get_response(self):
         if not self.args:
-            return self._help_message()
+            return self._help_message(), None
         url = self.args[0]
         try:
             artist = self._process_artist_url(url)
