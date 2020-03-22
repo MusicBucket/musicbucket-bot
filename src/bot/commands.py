@@ -167,7 +167,7 @@ class HelpCommand(Command):
               "-  /followedartists Return a list of followed artists. \n" \
               "-  /followartist spotify_artist_url Starts following an artist to be notified about album releases. \n" \
               "-  /unfollowartists Shows a list of buttons for unfollowing artists. \n" \
-              "-  /checkartistsnewalbumreleases Shows a list of buttons for checking new album releases. \n" \
+              "-  /checkartistsnewmusicreleases Shows a list of buttons for checking new album releases. \n" \
               "-  /mymusic Retrieves the music that you shared in all the chats. " \
               "It has to be called from a private conversation. \n" \
               "-  /recommendations Returns a list of 10 recommended tracks. " \
@@ -701,7 +701,7 @@ class CheckArtistsNewMusicReleasesCommand(FollowArtistMixin, CreateOrUpdateMixin
     def get_response(self):
         followed_artists = self._get_followed_artists_by_user(self.update)
         if not followed_artists:
-            return self._not_following_any_artist_message()
+            return self._not_following_any_artist_message(), None
         self._update_followed_artists_albums(followed_artists)
         message = self._build_message(followed_artists), None
         self._update_followed_artists_last_lookup(followed_artists)
