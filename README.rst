@@ -11,7 +11,7 @@ About
 MusicBucket Bot is a Telegram Bot that adds features and possibility to interact with **Spotify** music links that users send in
 a chat.
 
-It's main feature is to allow you to **save links that someones shares in a Chat** in a personal list.
+Its main feature is to allow you to **save links that someones shares in a Chat** in a personal list.
 So you can easily track which music you have pending to listen to.
 
 When an user sends a link, the bot is able to get information from a Spotify link like:
@@ -91,7 +91,7 @@ Special thanks
 ~~~~~~~~~~~~~~
 
 - To Pablo I. for the logo.
-- To the Sonomada (https://sonomada.org/) community and its group in Telegram (https://t.me/Sonomada_gang) where we use actively and test the bot and propose new features.
+- To the Sonomada community and its group in Telegram (https://t.me/Sonomada_gang) where we use and test the bot actively and propose new features.
 
 
 License

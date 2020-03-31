@@ -1,10 +1,11 @@
 import logging
 
-from telegram import InlineQueryResultArticle, InputTextMessageContent
+from telegram import InlineQueryResultArticle, InputTextMessageContent, Update
+from telegram.ext import CallbackContext
 
+from bot.api_client.spotify_api_client import SpotifyAPIClient
 from bot.logger import LoggerMixin
 from bot.music.music import EntityType
-from bot.music.spotify import SpotifyClient
 
 log = logging.getLogger(__name__)
 
@@ -12,10 +13,10 @@ log = logging.getLogger(__name__)
 class SearchInline(LoggerMixin):
     INLINE = 'search'
 
-    def __init__(self, update, context):
+    def __init__(self, update: Update, context: CallbackContext):
         self.update = update
         self.context = context
-        self.spotify_client = SpotifyClient()
+        self.spotify_api_client = SpotifyAPIClient()
         self._perform_search()
 
     def _perform_search(self):
@@ -28,15 +29,16 @@ class SearchInline(LoggerMixin):
         query = user_input.replace(entity_type, '').strip()
         results = []
         if len(query) >= 3:
-            search_results = self.spotify_client.search_link(query, entity_type)
-            results = self._build_results(search_results, entity_type)
+            pass
+            search_results = self.spotify_api_client.search(query, entity_type)
+            results = self._build_results(search_results.get('results'), entity_type)
         self._show_search_results(results)
 
     def _show_search_results(self, results):
         self.update.inline_query.answer(results)
 
     @staticmethod
-    def _build_results(search_results, entity_type):
+    def _build_results(search_results: [], entity_type: str) -> []:
         results = []
         for result in search_results:
             thumb_url = ''
@@ -67,7 +69,7 @@ class SearchInline(LoggerMixin):
         return results
 
     @staticmethod
-    def _get_entity_type(user_input):
+    def _get_entity_type(user_input: str) -> str:
         entity_type = user_input.split(' ', 1)[0]
         valid_entity_type = False
 
@@ -80,4 +82,3 @@ class SearchInline(LoggerMixin):
 
         if valid_entity_type:
             return entity_type
-        return None

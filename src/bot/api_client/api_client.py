@@ -18,14 +18,14 @@ class BaseAPIClient:
     Base client class of the MusicBucket App API
     """
     DATE_FORMAT = '%Y-%m-%d'
-    url = f'{getenv("API_URL")}:{getenv("API_PORT")}/'
+    url = f'{getenv("API_URL")}'
     token = getenv('API_TOKEN')
 
-    def get_url(self):
+    def _get_url(self, endpoint_url: str):
         """This method must be implemented in all the API Classes that inherits from this"""
         raise NotImplementedError
 
-    def process_request(self, url=None, method='get', params=None, data=None, json=None, headers=None, is_json=True,
+    def process_request(self, url, method='get', params=None, data=None, json=None, headers=None, is_json=True,
                         extra_snake_case=False, auth=None, files=None):
         if not headers:
             headers = {}
@@ -33,18 +33,12 @@ class BaseAPIClient:
             files = {}
         if self.token:
             headers['Authorization'] = 'Token {}'.format(self.token)
-        if url:
-            full_url = url
-        else:
-            full_url = self.get_url()
 
-        # retrieving data from api call
         response = requests.request(
-            method=method, url=full_url, params=params, data=data, json=json,
+            method=method, url=url, params=params, data=data, json=json,
             auth=auth, headers=headers, files=files,
         )
         processed_response = self.process_response(response, is_json, extra_snake_case)
-
         return processed_response
 
     def process_response(self, response, is_json, extra_snake_case):

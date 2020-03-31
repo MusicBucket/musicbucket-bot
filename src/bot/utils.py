@@ -1,5 +1,7 @@
 import re
 
+OUTPUT_DATE_FORMAT = '%Y/%m/%d'
+
 
 def to_snake_case(s):
     """
