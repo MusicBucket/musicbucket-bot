@@ -1,0 +1,9 @@
+version: '3.7'
+
+services:
+    bot:
+        build: .
+        volumes:
+            - ./src/:/app
+        env_file:
+            - .env

@@ -18,7 +18,7 @@ from bot.search import SearchInline
 
 load_dotenv()
 
-if getenv('DEBUG', False):
+if getenv('DEBUG', False) == "True":
     logging.basicConfig(
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         level=logging.INFO
