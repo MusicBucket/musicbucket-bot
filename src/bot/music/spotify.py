@@ -1,37 +1,12 @@
 import logging
-from os import getenv as getenv
 
-import spotipy
-from dotenv import load_dotenv
-from spotipy.oauth2 import SpotifyClientCredentials
-
-from bot.models import Artist, Album
-from bot.music.music import LinkType, LinkInfo, EntityType
+from bot.music.music import LinkType
 
 log = logging.getLogger(__name__)
 
-# Spotify client init
-load_dotenv()
 
-CLIENT_ID = getenv('SPOTIFY_CLIENT_ID')
-CLIENT_SECRET = getenv('SPOTIFY_CLIENT_SECRET')
-
-
-class SpotifyUrlMixin:
-    @staticmethod
-    def get_link_type(url):
-        """Resolves the Spotify link type"""
-        if 'artist' in url:
-            return LinkType.ARTIST
-        elif 'album' in url:
-            return LinkType.ALBUM
-        elif 'track' in url:
-            return LinkType.TRACK
-        return None
-
-    @staticmethod
-    def get_entity_id_from_url(url):
-        return url[url.rfind('/') + 1:]
+class SpotifyUtils:
+    SPOTIFY_LINK_URL = 'open.spotify.com'
 
     @staticmethod
     def clean_url(url):
@@ -40,100 +15,22 @@ class SpotifyUrlMixin:
             return url[:url.rfind('?')]
         return url
 
-    @staticmethod
-    def is_valid_url(url):
+    @classmethod
+    def is_valid_url(cls, url):
         """Check if a message contains a Spotify Link"""
-        return SpotifyClient.SPOTIFY_LINK_URL in url
+        return cls.SPOTIFY_LINK_URL in url
 
+    @staticmethod
+    def get_link_type_from_url(url):
+        """Resolves the Spotify link type"""
+        if 'artist' in url:
+            return LinkType.ARTIST.value
+        elif 'album' in url:
+            return LinkType.ALBUM.value
+        elif 'track' in url:
+            return LinkType.TRACK.value
+        return None
 
-class SpotifyClient(SpotifyUrlMixin):
-    RECOMMENDATIONS_NUMBER = 10
-    MAX_RECOMMENDATIONS_SEEDS = 5
-    SPOTIFY_LINK_URL = 'open.spotify.com'
-
-    def __init__(self):
-        client_credentials_manager = SpotifyClientCredentials(client_id=CLIENT_ID, client_secret=CLIENT_SECRET)
-        self.client = spotipy.Spotify(
-            client_credentials_manager=client_credentials_manager)
-
-    def search_link(self, query, entity_type):
-        """
-        Searches for a list of coincidences in Spotify
-        :param query: query string term
-        :param entity_type: EntityType
-        :return: list of results
-        """
-        search_result = self.client.search(query, type=entity_type)
-
-        if entity_type == EntityType.ARTIST.value:
-            search_result = search_result['artists']['items']
-        elif entity_type == EntityType.ALBUM.value:
-            search_result = search_result['albums']['items']
-        elif entity_type == EntityType.TRACK.value:
-            search_result = search_result['tracks']['items']
-
-        return search_result
-
-    def get_url_info(self, url, link_type):
-        """
-        Resolves the name and the genre of the artist/album/track from a link
-        Artist: 'spotify:artist:id'
-        Album: 'spotify:album:id'
-        Track: 'spotify:track:id'
-        """
-        # Gets the entity id from the Spotify link:
-        # https://open.spotify.com/album/*1yXlpa0dqoQCfucRNUpb8N*?si=GKPFOXTgRq2SLEE-ruNfZQ
-        entity_id = self.get_entity_id_from_url(url)
-        link_info = LinkInfo(link_type=link_type, cleaned_url=url)
-        if link_type == LinkType.ARTIST:
-            uri = f'spotify:artist:{entity_id}'
-            artist = self.client.artist(uri)
-            link_info.artist = artist['name']
-            link_info.genres = artist['genres']
-
-        elif link_type == LinkType.ALBUM:
-            uri = f'spotify:album:{entity_id}'
-            album = self.client.album(uri)
-            link_info.album = album['name']
-            link_info.artist = album['artists'][0]['name']
-            if album['genres']:
-                link_info.genres = album['genres']
-            else:
-                album_artist = self.client.artist(album['artists'][0]['id'])
-                link_info.genres = album_artist['genres']
-
-        elif link_type == LinkType.TRACK:
-            uri = f'spotify:track:{entity_id}'
-            track = self.client.track(uri)
-            link_info.track = track['name']
-            link_info.album = track['album']['name']
-            link_info.artist = track['artists'][0]['name']
-            track_artist = self.client.artist(track['artists'][0]['id'])
-            link_info.genres = track_artist['genres']
-
-        return link_info
-
-    def get_recommendations(self, seed_artists: []):
-        """Get track recommendations based on a list of max. 5 artist seeds"""
-        artists_ids = [artist.id for artist in seed_artists]
-        tracks = self.client.recommendations(seed_artists=artists_ids, limit=self.RECOMMENDATIONS_NUMBER)
-        return tracks
-
-    def get_all_artist_albums(self, artist: Artist):
-        albums_response = self.client.artist_albums(artist.id, album_type='album,single,compilation', limit=50)
-        albums_simpl = albums_response['items']
-        while albums_response['next']:
-            albums_response = self.client.next(albums_response)
-            albums_simpl.extend(albums_response['items'])
-        albums_full = []
-        for album_simpl in albums_simpl:
-            albums_full.append(self.client.album(album_simpl['id']))
-        return albums_full
-
-    def get_artist_top_track(self, artist: Artist):
-        top_track = self.client.artist_top_tracks(artist.id)['tracks'][0]
-        return top_track
-
-    def get_album_first_track(self, album: Album):
-        first_track = self.client.album_tracks(album.id)['items'][0]
-        return first_track
+    @staticmethod
+    def get_entity_id_from_url(url):
+        return url[url.rfind('/') + 1:]

@@ -1,15 +1,17 @@
 import logging
 import re
+from collections import OrderedDict
 
 from emoji import emojize
 from telegram import Update
 from telegram.ext import CallbackContext
 
+from bot import emojis
 from bot.buttons import SaveLinkButton
 from bot.logger import LoggerMixin
 from bot.models import Link, CreateOrUpdateMixin
 from bot.music.music import LinkType
-from bot.music.spotify import SpotifyUrlMixin, SpotifyClient
+from bot.music.spotify import SpotifyUtils
 from bot.reply import ReplyMixin, ReplyType
 
 log = logging.getLogger(__name__)
@@ -27,80 +29,56 @@ class MessageProcessor:
             url_processor.process()
 
 
-class UrlProcessor(ReplyMixin, LoggerMixin, SpotifyUrlMixin, CreateOrUpdateMixin):
+class UrlProcessor(ReplyMixin, LoggerMixin, SpotifyUtils, CreateOrUpdateMixin):
 
     def __init__(self, update, context, url, command=None):
         self.update = update
         self.context = context
         self.url = url
         self.command = command
-        self.spotify_client = SpotifyClient()
 
     def process(self):
         is_valid = self.is_valid_url(self.url)
-        link_type = self.get_link_type(self.url)
         self.log_url_processing(self.url, is_valid, self.update)
-        if is_valid and link_type:
+        if is_valid:
             cleaned_url = self.clean_url(self.url)
-            entity_id = self.get_entity_id_from_url(self.url)
-            user = self.save_user(self.update)
-            chat = self.save_chat(self.update)
-            link = Link(
-                url=cleaned_url,
-                link_type=link_type.value,
-                user=user,
-                chat=chat,
-            )
+            user = self.save_user(self.update.message.from_user)
+            chat = self.save_chat(self.update.message.chat)
+            sent_link = self.save_link(cleaned_url, user.get('id'), chat.get('id'))
+            return self._build_message(sent_link)
 
-            spotify_track = None
-            if link_type == LinkType.ARTIST:
-                spotify_artist = self.spotify_client.client.artist(entity_id)
-                artist = self.save_artist(spotify_artist)
-                spotify_track = self.spotify_client.get_artist_top_track(artist)
-                link.artist = artist
-            elif link_type == LinkType.ALBUM:
-                spotify_album = self.spotify_client.client.album(entity_id)
-                album = self.save_album(spotify_album)
-                spotify_track = self.spotify_client.get_album_first_track(album)
-                link.album = album
-            elif link_type == LinkType.TRACK:
-                spotify_track = self.spotify_client.client.track(entity_id)
-                track = self.save_track(spotify_track)
-                link.track = track
-            link, updated = self.save_link(link, user, chat)
-
-            return self._build_message(link, spotify_track, updated)
-
-    def _build_message(self, link, spotify_track, updated):
+    def _build_message(self, sent_link: OrderedDict):
         from bot.commands import NowPlayingCommand
-        msg = '<strong>{}: </strong>'.format(
-            'Saved' if not updated else 'Updated')
-        genre_names = [g.name for g in link.genres]
-        genres = ', '.join(genre_names)
+        msg = '<strong>Saved: </strong>'
+        link = sent_link.get('link')
+        genres = ', '.join(Link.get_genres(link))
 
-        if link.link_type == LinkType.ARTIST.value:
-            msg += '{} <strong>{}</strong>\n'.format(emojize(':busts_in_silhouette:', use_aliases=True),
-                                                     link.artist.name)
-        elif link.link_type == LinkType.ALBUM.value:
-            msg += '{} <strong>{}</strong> - <strong>{}</strong>\n'.format(emojize(':cd:', use_aliases=True),
-                                                                           link.album.artists.first().name,
-                                                                           link.album.name)
-        elif link.link_type == LinkType.TRACK.value:
-            msg += '{} {} by <strong>{}</strong>\n'.format(emojize(':musical_note:', use_aliases=True),
-                                                           link.track.name,
-                                                           link.track.artists.first().name)
+        if link.get('link_type') == LinkType.ARTIST.value:
+            msg += '{} <strong>{}</strong>\n'.format(emojis.EMOJI_ARTIST, link.get('artist').get('name'))
+        elif link.get('link_type') == LinkType.ALBUM.value:
+            msg += '{} <strong>{}</strong> - <strong>{}</strong>\n'.format(
+                emojis.EMOJI_ALBUM,
+                link.get('album').get('artists')[0].get('name'),
+                link.get('album').get('name')
+            )
+        elif link.get('link_type') == LinkType.TRACK.value:
+            msg += '{} {} by <strong>{}</strong>\n'.format(
+                emojize(':musical_note:', use_aliases=True),
+                link.get('track').get('name'),
+                link.get('track').get('artists')[0].get('name'),
+            )
         # Only show the link if the processed url comes from a /np command
         if isinstance(self.command, NowPlayingCommand):
-            msg += f'{link.url} \n'
+            msg += f'{link.get("url")} \n'
 
         msg += '<strong>Genres:</strong> {}'.format(genres if genres else 'N/A')
-        save_link_button_keyboard_markup = SaveLinkButton.get_keyboard_markup(link.id)
-        track_preview_url = spotify_track.get('preview_url', None)
-        if track_preview_url:
-            performer = spotify_track['artists'][0].get('name', 'unknown')
-            title = spotify_track.get('name', 'unknown')
+        save_link_button_keyboard_markup = SaveLinkButton.get_keyboard_markup(link.get('id'))
+        preview_track = sent_link.get('spotify_preview_track', None)
+        if preview_track.get('preview_url'):
+            performer = preview_track.get('artists')[0].get('name', 'unknown')
+            title = preview_track.get('name', 'unknown')
             self.reply(update=self.update, context=self.context, message=msg, reply_type=ReplyType.AUDIO,
-                       audio=track_preview_url, title=title, performer=performer,
+                       audio=preview_track.get('preview_url'), title=title, performer=performer,
                        reply_markup=save_link_button_keyboard_markup)
         else:
             self.reply(self.update, self.context, msg, reply_markup=save_link_button_keyboard_markup)

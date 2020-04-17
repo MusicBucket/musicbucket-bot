@@ -1,10 +1,13 @@
 import logging
 import datetime
+from collections import OrderedDict
 
 from emoji import emojize
 from peewee import Model, CharField, DateTimeField, IntegerField, ForeignKeyField, ManyToManyField, \
     BooleanField, AutoField, DateField
 
+from bot.api_client.spotify_api_client import SpotifyAPIClient
+from bot.api_client.telegram_api_client import TelegramAPIClient
 from bot.db import db
 from bot.music.music import StreamingServiceType, LinkType
 
@@ -172,19 +175,6 @@ class Link(BaseModel, EmojiModelMixin):
     chat = ForeignKeyField(Chat, backref='links')  # deprecated field
     last_update_user = ForeignKeyField(User, backref='updated_links', null=True)  # deprecated field
 
-    @property
-    def genres(self):
-        genres = None
-        if self.link_type == LinkType.ARTIST.value:
-            genres = self.artist.genres
-        elif self.link_type == LinkType.ALBUM.value:
-            genres = self.album.get_first_artist().genres if self.album.get_first_artist() else None
-        elif self.link_type == LinkType.TRACK.value:
-            genres = self.track.get_first_artist().genres if self.track.get_first_artist() else None
-        if not genres:
-            return []
-        return genres
-
     def get_emoji(self):
         if self.link_type == LinkType.ARTIST.value:
             return Artist.get_emoji()
@@ -201,6 +191,42 @@ class Link(BaseModel, EmojiModelMixin):
         self.updated_at = datetime.datetime.now()
         self.last_update_user = user
         self.times_sent += 1
+
+    @staticmethod
+    def get_genres(link: OrderedDict):
+        link_type = link.get('link_type')
+        artist = link.get('artist')
+        album = link.get('album')
+        track = link.get('track')
+        genres = None
+        if link_type == LinkType.ARTIST.value:
+            genres = artist.get('genres')
+        elif link_type == LinkType.ALBUM.value:
+            genres = album.get('artists')[0].get('genres') if album.get('artists')[0] else None
+        elif link_type == LinkType.TRACK.value:
+            genres = track.get('artists')[0].get('genres') if track.get('artists')[0] else None
+        if not genres:
+            return []
+        return [genre.get('name') for genre in genres]
+
+    @staticmethod
+    def get_name(link: OrderedDict):
+        link_type = link.get('link_type')
+        artist = link.get('artist')
+        album = link.get('album')
+        track = link.get('track')
+        if link_type == LinkType.ARTIST.value:
+            return artist.get('name')
+        elif link_type == LinkType.ALBUM.value:
+            return "{} - {}".format(
+                album.get('artists')[0].get('name') if album.get('artists') else '',
+                album.get('name')
+            )
+        elif link_type == LinkType.TRACK.value:
+            return "{} by {}".format(
+                track.get('name'),
+                track.get('artists')[0].get('name') if track.get('artists') else '',
+            )
 
     def __str__(self):
         if self.link_type == LinkType.ARTIST.value:
@@ -273,155 +299,39 @@ class FollowedArtist(BaseModel):
 
 
 class CreateOrUpdateMixin:
-    """
-    TODO: Replace get_or_create for insert_or_replace or equivalent to create_or_update
-    """
 
-    def save_link(self, link, sent_by, chat):
-        """Create if it doesn't exist and it associates"""
-        updated = False
-        existent_link = Link.get_or_none(Link.url == link.url)
-        if not existent_link:
-            link.created_at = datetime.datetime.now()
-            link.save(force_insert=True)
-            self.log_db_operation(self.DBOperation.CREATE, link)
-        else:
-            link = existent_link
-        ChatLink.create(
-            sent_at=datetime.datetime.now(),
-            chat=chat,
-            link=link,
-            sent_by=sent_by
-        )
-        return link, updated
+    @staticmethod
+    def save_link(url: str, user_id: str, chat_id: str) -> OrderedDict:
+        telegram_api_client = TelegramAPIClient()
+        save_link_response = telegram_api_client.create_sent_link(url, user_id, chat_id)
+        return save_link_response
 
-    def save_chat(self, update):
-        chat, was_created = Chat.get_or_create(
-            id=update.message.chat_id,
-            defaults={
-                'name': update.message.chat.title or update.message.chat.username or update.message.chat.first_name
-            })
-        if was_created:
-            self.log_db_operation(self.DBOperation.CREATE, chat)
-        return chat
+    @staticmethod
+    def save_chat(chat):
+        telegram_api_client = TelegramAPIClient()
+        create_chat_response = telegram_api_client.create_chat(chat)
+        return create_chat_response
 
-    def save_user(self, update):
-        user, was_created = User.get_or_create(
-            id=update.message.from_user.id,
-            defaults={
-                'username': update.message.from_user.username,
-                'first_name': update.message.from_user.first_name})
-        if was_created:
-            self.log_db_operation(self.DBOperation.CREATE, user)
-        return user
+    @staticmethod
+    def save_user(user):
+        telegram_api_client = TelegramAPIClient()
+        create_user_response = telegram_api_client.create_user(user)
+        return create_user_response
 
-    def save_genres(self, genres):
-        saved_genres = []
-        for genre in genres:
-            saved_genre, was_created = Genre.get_or_create(name=genre)
-            saved_genres.append(saved_genre)
-            if was_created:
-                self.log_db_operation(self.DBOperation.CREATE, saved_genre)
-        return saved_genres
+    @staticmethod
+    def save_artist(artist_id: str):
+        spotify_api_client = SpotifyAPIClient()
+        create_artist_response = spotify_api_client.create_artist(artist_id)
+        return create_artist_response
 
-    def save_artist(self, spotify_artist):
-        image = spotify_artist['images'][0]['url'] if spotify_artist['images'] else ''
+    @staticmethod
+    def save_album(album_id: str):
+        spotify_api_client = SpotifyAPIClient()
+        create_album_response = spotify_api_client.create_album(album_id)
+        return create_album_response
 
-        saved_artist, was_created = Artist.get_or_create(
-            id=spotify_artist['id'],
-            defaults={
-                'name': spotify_artist['name'],
-                'image': image,
-                'popularity': spotify_artist['popularity'],
-                'href': spotify_artist['href'],
-                'spotify_url': spotify_artist['external_urls']['spotify'],
-                'uri': spotify_artist['uri']})
-
-        # Save or retrieve the genres
-        if was_created:
-            saved_genres = self.save_genres(spotify_artist['genres'])
-            saved_artist.genres = saved_genres
-            saved_artist.save()
-            self.log_db_operation(self.DBOperation.CREATE, saved_artist)
-        return saved_artist
-
-    def save_album(self, spotify_album):
-        image = spotify_album['images'][0]['url'] if spotify_album['images'] else ''
-
-        saved_album, was_created = Album.get_or_create(
-            id=spotify_album['id'],
-            defaults={
-                'name': spotify_album['name'],
-                'label': spotify_album['label'],
-                'image': image,
-                'popularity': spotify_album['popularity'],
-                'href': spotify_album['href'],
-                'spotify_url': spotify_album['external_urls']['spotify'],
-                'uri': spotify_album['uri'],
-                'album_type': spotify_album['album_type'],
-                'release_date': Album.parse_release_date(
-                    spotify_album['release_date'], spotify_album['release_date_precision']
-                ),
-                'release_date_precision': spotify_album['release_date_precision'],
-            })
-
-        if was_created:
-            saved_artists = []
-            for album_artist in spotify_album['artists']:
-                artist_id = album_artist['id']
-                artist = self.spotify_client.client.artist(artist_id)
-                saved_artist = self.save_artist(artist)
-                saved_artists.append(saved_artist)
-            # Set the artists to the album
-            saved_album.artists = saved_artist
-            saved_album.save()
-
-            saved_genres = self.save_genres(spotify_album['genres'])
-            saved_album.genres = saved_genres
-            saved_album.save()
-            self.log_db_operation(self.DBOperation.CREATE, saved_album)
-        return saved_album
-
-    def save_track(self, spotify_track):
-        album_id = spotify_track['album']['id']
-        album = self.spotify_client.client.album(album_id)
-        saved_album = self.save_album(album)
-
-        # Save the track (with the album)
-        saved_track, was_created = Track.get_or_create(
-            id=spotify_track['id'],
-            defaults={
-                'name': spotify_track['name'],
-                'track_number ': spotify_track['track_number'],
-                'duration_ms ': spotify_track['duration_ms'],
-                'explicit': spotify_track['explicit'],
-                'popularity ': spotify_track['popularity'],
-                'href': spotify_track['href'],
-                'spotify_url': spotify_track['external_urls']['spotify'],
-                'preview_url ': spotify_track['preview_url'],
-                'uri': spotify_track['uri'],
-                'album': saved_album})
-
-        if was_created:
-            saved_artists = []
-            for track_artist in spotify_track['artists']:
-                artist_id = track_artist['id']
-                artist = self.spotify_client.client.artist(artist_id)
-                saved_artist = self.save_artist(artist)
-                saved_artists.append(saved_artist)
-            # Set the artists to the album
-            saved_track.artists = saved_artists
-            saved_track.save()
-            self.log_db_operation(self.DBOperation.CREATE, saved_track)
-        return saved_track
-
-    def save_followed_artist(self, artist: Artist, user: User):
-        saved_followed_artist, was_created = FollowedArtist.get_or_create(
-            user=user,
-            artist=artist,
-            defaults={
-                'followed_at': datetime.datetime.now()
-            })
-        if was_created:
-            self.log_db_operation(self.DBOperation.CREATE, saved_followed_artist)
-        return saved_followed_artist, was_created
+    @staticmethod
+    def save_track(track_id: str):
+        spotify_api_client = SpotifyAPIClient()
+        create_track_response = spotify_api_client.create_track(track_id)
+        return create_track_response

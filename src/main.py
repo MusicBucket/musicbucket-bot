@@ -10,10 +10,9 @@ from bot.db import db
 from bot.messages import MessageProcessor
 from bot.models import Link, Artist, Genre, User, Chat, Album, Track, AlbumArtist, AlbumGenre, ArtistGenre, \
     TrackArtist, LastFMUsername, SavedLink, ChatLink, FollowedArtist
-from bot.commands import CommandFactory, MusicCommand, MusicFromBeginningCommand, MyMusicCommand, \
-    RecommendationsCommand, NowPlayingCommand, LastFMSetCommand, SavedLinksCommand, DeleteSavedLinksCommand, \
-    StatsCommand, StartCommand, HelpCommand, FollowArtistCommand, FollowedArtistsCommand, UnfollowArtistsCommand, \
-    CheckArtistsNewMusicReleasesCommand
+from bot.commands import CommandFactory, MusicCommand, MusicFromBeginningCommand, MyMusicCommand, NowPlayingCommand, \
+    LastFMSetCommand, SavedLinksCommand, DeleteSavedLinksCommand, StatsCommand, StartCommand, HelpCommand, \
+    FollowArtistCommand, FollowedArtistsCommand, UnfollowArtistsCommand, CheckArtistsNewMusicReleasesCommand
 from bot.search import SearchInline
 
 load_dotenv()
@@ -69,9 +68,6 @@ def main():
     )
     dispatcher.add_handler(
         CommandHandler(MyMusicCommand.COMMAND, CommandFactory.run_my_music_command)
-    )
-    dispatcher.add_handler(
-        CommandHandler(RecommendationsCommand.COMMAND, CommandFactory.run_recommendations_command)
     )
     dispatcher.add_handler(
         CommandHandler(NowPlayingCommand.COMMAND, CommandFactory.run_now_playing_command)

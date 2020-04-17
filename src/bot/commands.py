@@ -1,22 +1,23 @@
 import datetime
 import logging
-import random
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 
-from emoji import emojize
-from peewee import fn, SQL
 from telegram import Update
 from telegram.ext import CallbackContext
 
+from bot.api_client.api_client import APIClientException
+from bot.api_client.lastfm_api_client import LastfmAPIClient
+from bot.api_client.spotify_api_client import SpotifyAPIClient
+from bot.api_client.telegram_api_client import TelegramAPIClient
 from bot.buttons import DeleteSavedLinkButton, UnfollowArtistButton
+from bot import emojis
 from bot.logger import LoggerMixin
 from bot.messages import UrlProcessor
-from bot.models import Chat, Link, Album, LastFMUsername, User, CreateOrUpdateMixin, SavedLink, Track, Artist, ChatLink, \
-    FollowedArtist
-from bot.music.lastfm import LastFMClient
-from bot.music.music import LinkType, EntityType
-from bot.music.spotify import SpotifyClient
+from bot.models import Link, CreateOrUpdateMixin, Artist
+from bot.music.music import LinkType
+from bot.music.spotify import SpotifyUtils
 from bot.reply import ReplyMixin
+from bot.utils import OUTPUT_DATE_FORMAT
 
 log = logging.getLogger(__name__)
 
@@ -49,11 +50,6 @@ class CommandFactory:
         if update.message.chat.type != 'group' and update.message.chat.type != 'supergroup':
             command = MyMusicCommand(update, context)
             command.run()
-
-    @staticmethod
-    def run_recommendations_command(update: Update, context: CallbackContext):
-        command = RecommendationsCommand(update, context)
-        command.run()
 
     @staticmethod
     def run_now_playing_command(update: Update, context: CallbackContext):
@@ -190,6 +186,10 @@ class MusicCommand(Command):
     DAYS = 7
     LAST_WEEK = datetime.datetime.now() - datetime.timedelta(days=DAYS)
 
+    def __init__(self, update: Update, context: CallbackContext):
+        super().__init__(update, context)
+        self.telegram_api_client = TelegramAPIClient()
+
     def get_response(self):
         if self.args:
             links = self._get_links_from_user()
@@ -201,48 +201,42 @@ class MusicCommand(Command):
     @staticmethod
     def _build_message(last_week_links):
         msg = '<strong>Music from the last week:</strong> \n'
-        for user, links in last_week_links.items():
-            msg += '- {} <strong>{}:</strong>\n'.format(emojize(':baby:', use_aliases=True),
-                                                        user.username or user.first_name)
-            for link in links:
+        for user, sent_links in last_week_links.items():
+            msg += '- {} <strong>{}:</strong>\n'.format(emojis.EMOJI_USER, user)
+            for sent_link in sent_links:
+                link = sent_link.get('link')
+                genres = Link.get_genres(link)
                 msg += '    {} <a href="{}">{}</a> {}\n'.format(
-                    link.get_emoji(),
-                    link.url,
-                    str(link),
-                    '({})'.format(link.genres[0]) if link.genres else ''
+                    emojis.get_music_emoji(link.get('type')),
+                    link.get('url'),
+                    Link.get_name(link),
+                    '({})'.format(', '.join(genres)) if genres else ''
                 )
             msg += '\n'
         return msg
 
     def _get_links(self):
-        # TODO: Move to model
-        links = Link.select() \
-            .join(ChatLink, on=(ChatLink.link == Link.id)) \
-            .join(Chat, on=(Chat.id == ChatLink.chat)) \
-            .where(Chat.id == self.update.message.chat_id) \
-            .where((ChatLink.sent_at >= self.LAST_WEEK)) \
-            .order_by(ChatLink.sent_at.asc())
+        links = self.telegram_api_client.get_sent_links(
+            chat_id=self.update.message.chat_id,
+            since_date=self.LAST_WEEK
+        )
         return links
 
     def _get_links_from_user(self):
-        # TODO: Move to model
         username = self.args[0]
         username = username.replace('@', '')
-        links = Link.select() \
-            .join(ChatLink, on=(ChatLink.link == Link.id)) \
-            .join(User, on=(User.id == ChatLink.sent_by)) \
-            .join(Chat, on=(Chat.id == ChatLink.chat)) \
-            .where((Chat.id == self.update.message.chat_id) & (User.username == username)) \
-            .where((ChatLink.sent_at >= self.LAST_WEEK)) \
-            .order_by(ChatLink.sent_at.asc())
+        links = self.telegram_api_client.get_sent_links(
+            chat_id=self.update.message.chat_id,
+            user_username=username,
+            since_date=self.LAST_WEEK
+        )
         return links
 
     @staticmethod
     def _group_links_by_user(links):
-        # TODO: Move to model
         last_week_links = defaultdict(list)
         for link in links:
-            last_week_links[link.user].append(link)
+            last_week_links[link.get('sent_by').get('username', link.get('first_name'))].append(link)
         return dict(last_week_links)
 
 
@@ -252,6 +246,10 @@ class MusicFromBeginningCommand(Command):
     Gets the links sent by an specific username of the chat from the beginning
     """
     COMMAND = 'music_from_beginning'
+
+    def __init__(self, update: Update, context: CallbackContext):
+        super().__init__(update, context)
+        self.telegram_api_client = TelegramAPIClient()
 
     def get_response(self):
         if self.args:
@@ -265,43 +263,35 @@ class MusicFromBeginningCommand(Command):
     @staticmethod
     def _build_message(all_time_links):
         msg = '<strong>Music from the beginning of time:</strong> \n'
-        for user, links in all_time_links.items():
-            msg += '- {} <strong>{}:</strong>\n'.format(
-                emojize(':baby:', use_aliases=True), user.username or user.first_name
-            )
-            for link in links:
-                msg += '    {}  {} <a href="{}">{}</a> {}\n'.format(
-                    link.get_emoji(),
-                    '[{}]'.format(
-                        link.created_at.strftime("%Y/%m/%d"), ' | Updated @ {} by {}'.format(
-                            link.updated_at.strftime("%Y/%m/%d"),
-                            link.last_update_user.username or link.last_update_user.first_name or ''
-                        ) if link.last_update_user else ''
-                    ),
-                    link.url,
-                    str(link),
-                    '({})'.format(link.genres[0]) if link.genres else '')
+        for user, sent_links in all_time_links.items():
+            msg += '- {} <strong>{}:</strong>\n'.format(emojis.EMOJI_USER, user)
+            for sent_link in sent_links:
+                link = sent_link.get('link')
+                genres = Link.get_genres(link)
+                msg += '    {}  <a href="{}">{}</a> {}\n'.format(
+                    emojis.get_music_emoji(link.get('type')),
+                    f'[{datetime.datetime.fromisoformat(sent_link.get("sent_at")).strftime(OUTPUT_DATE_FORMAT)}]',
+                    link.get('url'),
+                    Link.get_name(link),
+                    '({})'.format(', '.join(genres)) if genres else ''
+                )
             msg += '\n'
         return msg
 
     def _get_links_from_user(self):
-        # TODO: Move to model
         username = self.args[0]
         username = username.replace('@', '')
-        links = Link.select() \
-            .join(ChatLink, on=(ChatLink.link == Link.id)) \
-            .join(User, on=(User.id == ChatLink.sent_by)) \
-            .join(Chat, on=(Chat.id == ChatLink.chat)) \
-            .where((Chat.id == self.update.message.chat_id) & (User.username == username)) \
-            .order_by(ChatLink.sent_at.asc())
+        links = self.telegram_api_client.get_sent_links(
+            chat_id=self.update.message.chat_id,
+            user_username=username
+        )
         return links
 
     @staticmethod
     def _group_links_by_user(links):
-        # TODO: Move to model
         all_time_links = defaultdict(list)
         for link in links:
-            all_time_links[link.user].append(link)
+            all_time_links[link.get('sent_by').get('username', link.get('first_name'))].append(link)
         return dict(all_time_links)
 
 
@@ -313,6 +303,10 @@ class MyMusicCommand(Command):
     """
     COMMAND = 'mymusic'
 
+    def __init__(self, update: Update, context: CallbackContext):
+        super().__init__(update, context)
+        self.telegram_api_client = TelegramAPIClient()
+
     def get_response(self):
         all_time_links = self._get_all_time_links_from_user()
         return self._build_message(all_time_links), None
@@ -320,87 +314,27 @@ class MyMusicCommand(Command):
     @staticmethod
     def _build_message(all_time_links):
         msg = '<strong>Music sent in all your chats from the beginning of time:</strong> \n'
-        for link in all_time_links:
+        for sent_link in all_time_links:
+            link = sent_link.get('link')
+            genres = Link.get_genres(link)
             msg += '    {}  {} <a href="{}">{}</a> {}\n'.format(
-                link.get_emoji(),
-                '[{}{}@{}]'.format(
-                    link.created_at.strftime("%Y/%m/%d"), ' | Updated @ {} by {}'.format(
-                        link.updated_at.strftime("%Y/%m/%d"),
-                        link.last_update_user.username or link.last_update_user.first_name or ''
-                    ) if link.last_update_user else '',
-                    link.chat.name
+                emojis.get_music_emoji(link.get('type')),
+                '[{}@{}]'.format(
+                    datetime.datetime.fromisoformat(sent_link.get('sent_at')).strftime(OUTPUT_DATE_FORMAT),
+                    sent_link.get('chat').get('name')
                 ),
-                link.url,
-                str(link),
-                '({})'.format(link.genres[0]) if link.genres else '')
+                link.get('url'),
+                Link.get_name(link),
+                '({})'.format(', '.join(genres)) if genres else ''
+            )
         msg += '\n'
         return msg
 
     def _get_all_time_links_from_user(self):
-        links = Link.select() \
-            .join(ChatLink, on=(ChatLink.link == Link.id)) \
-            .join(User, on=(User.id == ChatLink.sent_by)) \
-            .join(Chat, on=(Chat.id == ChatLink.chat)) \
-            .where(User.id == self.update.message.from_user.id) \
-            .order_by(ChatLink.sent_at.asc())
+        links = self.telegram_api_client.get_sent_links(
+            user_id=self.update.message.from_user.id
+        )
         return links
-
-
-class RecommendationsCommand(Command):
-    """
-    Command /recommendations
-    Returns a recommendations list based on the links sent during the last week
-    """
-    COMMAND = 'recommendations'
-    DAYS = 7
-    LAST_WEEK = datetime.datetime.now() - datetime.timedelta(days=DAYS)
-
-    def __init__(self, update, context):
-        super().__init__(update, context)
-        self.spotify_client = SpotifyClient()
-
-    def get_response(self):
-        track_recommendations = {}
-        artist_seeds = []
-        album_seeds = self._get_album_seeds()
-        if album_seeds:
-            if len(album_seeds) > SpotifyClient.MAX_RECOMMENDATIONS_SEEDS:
-                album_seeds = self._get_random_album_seeds(album_seeds)
-            artist_seeds = [album.artists.first() for album in album_seeds]
-            track_recommendations = self.spotify_client.get_recommendations(artist_seeds)
-        return self._build_message(track_recommendations, artist_seeds), None
-
-    def _get_album_seeds(self):
-        album_seeds = Album.select() \
-            .join(Link) \
-            .join(ChatLink) \
-            .join(Chat) \
-            .where(Chat.id == self.update.message.chat_id) \
-            .where((ChatLink.sent_at >= self.LAST_WEEK)) \
-            .where(Link.link_type == LinkType.ALBUM.value) \
-            .order_by(ChatLink.sent_at.asc())
-        return album_seeds
-
-    @staticmethod
-    def _build_message(track_recommendations, artist_seeds):
-        if not track_recommendations.get('tracks', []) or not artist_seeds:
-            msg = 'There are not recommendations for this week yet. Send some music!'
-            return msg
-
-        artists_names = [artist.name for artist in artist_seeds]
-        msg = 'Track recommendations of the week, based on the artists: <strong>{}</strong>\n'.format(
-            '</strong>, <strong>'.join(artists_names))
-        for track in track_recommendations['tracks']:
-            msg += '{} <a href="{}">{}</a> by <strong>{}</strong>\n'.format(
-                Track.get_emoji(),
-                track['external_urls']['spotify'],
-                track['name'],
-                track['artists'][0]['name'])
-        return msg
-
-    @staticmethod
-    def _get_random_album_seeds(album_seeds):
-        return random.sample(list(album_seeds), k=SpotifyClient.MAX_RECOMMENDATIONS_SEEDS)
 
 
 class NowPlayingCommand(Command):
@@ -413,59 +347,41 @@ class NowPlayingCommand(Command):
 
     def __init__(self, update, context):
         super().__init__(update, context)
-        self.lastfm_client = LastFMClient()
-        self.spotify_client = SpotifyClient()
+        self.lastfm_api_client = LastfmAPIClient()
+        self.spotify_api_client = SpotifyAPIClient()
 
     def get_response(self):
-        now_playing = None
-        username = None
-        from_user = self.update.message.from_user
-        lastfm_username = LastFMUsername.get_or_none(from_user.id)
-        if lastfm_username:
-            username = lastfm_username.username
-            now_playing = self.lastfm_client.now_playing(username)
-        msg = self._build_message(now_playing, username)
+        now_playing_data = self.lastfm_api_client.get_now_playing(self.update.message.from_user.id)
+        msg = self._build_message(now_playing_data)
 
-        if now_playing:
-            url_candidate = self._search_for_spotify_url_candidate(now_playing)
-            if url_candidate:
-                self._save_link(url_candidate)
+        url_candidate = now_playing_data.get('url_candidate')
+        if url_candidate:
+            self._save_link(url_candidate)
         return msg, None
 
     @staticmethod
-    def _build_message(now_playing, username):
-        if not username:
+    def _build_message(now_playing_data):
+        lastfm_username = now_playing_data.get('lastfm_user').get('username')
+        if not lastfm_username:
             return f'There is no Last.fm username for your user. Please set your username with:\n' \
                    f'<i>/lastfmset username</i>'
-        if not now_playing:
-            return f'<b>{username}</b> is not currently playing music'
+        if not now_playing_data.get('is_playing_now'):
+            return f'<b>{lastfm_username}</b> is not currently playing music'
 
-        artist = now_playing.get('artist')
-        album = now_playing.get('album')
-        track = now_playing.get('track')
-        cover = now_playing.get('cover')
+        artist_name = now_playing_data.get('artist_name')
+        album_name = now_playing_data.get('album_name')
+        track_name = now_playing_data.get('track_name')
+        cover = now_playing_data.get('cover')
 
-        msg = f"<b>{username}</b>'s now playing:\n"
-        msg += f"{Track.get_emoji()} {track.title}\n"
-        if album:
-            msg += f"{Album.get_emoji()} {album.title}\n"
-        if artist:
-            msg += f"{Artist.get_emoji()} {artist}\n"
+        msg = f"<b>{lastfm_username}</b>'s now playing:\n"
+        msg += f"{emojis.EMOJI_TRACK} {track_name}\n"
+        if album_name:
+            msg += f"{emojis.EMOJI_ALBUM} {album_name}\n"
+        if artist_name:
+            msg += f"{emojis.EMOJI_ARTIST} {artist_name}\n"
         if cover:
             msg += f"<a href='{cover}'>&#8205;</a>"
         return msg
-
-    def _search_for_spotify_url_candidate(self, now_playing):
-        album = now_playing.get('album')
-        track = now_playing.get('track')
-        if album:
-            results = self.spotify_client.search_link(album, EntityType.ALBUM.value)
-        else:
-            results = self.spotify_client.search_link(track, EntityType.TRACK.value)
-        candidate = results[0] if results else None
-        if candidate:
-            return candidate['external_urls']['spotify']
-        return
 
     def _save_link(self, url):
         url_processor = UrlProcessor(self.update, self.context, url, self)
@@ -479,11 +395,16 @@ class LastFMSetCommand(Command, CreateOrUpdateMixin):
     """
     COMMAND = 'lastfmset'
 
-    def get_response(self):
-        self.save_chat(self.update)
-        user = self.save_user(self.update)
+    def __init__(self, update: Update, context: CallbackContext):
+        super().__init__(update, context)
+        self.lastfm_api_client = LastfmAPIClient()
 
-        lastfm_username = self._set_lastfm_username(user)
+    def get_response(self):
+        # We call save_user() because we want to ensure
+        # that the Telegram User already exists in the API Database
+        self.save_user(self.update.message.from_user)
+
+        lastfm_username = self._set_lastfm_username(self.update.message.from_user)
         return self._build_message(lastfm_username), None
 
     def _build_message(self, lastfm_username):
@@ -494,20 +415,10 @@ class LastFMSetCommand(Command, CreateOrUpdateMixin):
     def _set_lastfm_username(self, user):
         if not self.args:
             return None
-
         username = self.args[0]
         username = username.replace('@', '')
-
-        lastfm_username, created = LastFMUsername.get_or_create(
-            user=user,
-            defaults={
-                'username': username
-            }
-        )
-        if not created:
-            lastfm_username.username = username
-            lastfm_username.save()
-        return username
+        lastfm_user = self.lastfm_api_client.set_lastfm_user(user.id, username)
+        return lastfm_user.get('username')
 
     @staticmethod
     def _help_message():
@@ -521,26 +432,27 @@ class SavedLinksCommand(Command):
     """
     COMMAND = 'savedlinks'
 
+    def __init__(self, update: Update, context: CallbackContext):
+        super().__init__(update, context)
+        self.spotify_api_client = SpotifyAPIClient()
+
     def get_response(self):
-        saved_links = self._get_saved_links_by_user()
-        return self._build_message(saved_links), None
+        saved_links_response = self.spotify_api_client.get_saved_links(self.update.message.from_user.id)
+        return self._build_message(saved_links_response), None
 
     @staticmethod
-    def _build_message(saved_links):
-        if not saved_links:
+    def _build_message(saved_links_response: {}):
+        if not saved_links_response:
             return 'You have not saved links'
 
         msg = '<strong>Saved links:</strong> \n'
-        for saved_link in saved_links:
-            msg += f'- {saved_link.link.get_emoji()} <a href="{saved_link.link.url}">{str(saved_link.link)}</a> ' \
-                   f'({saved_link.link.genres[0] if saved_link.link.genres else ""}). ' \
-                   f'Saved at: {saved_link.saved_at.strftime("%Y/%m/%d")}\n'
+        for saved_link in saved_links_response:
+            link = saved_link.get('link')
+            genres = Link.get_genres(link)
+            msg += f'- {emojis.get_music_emoji(link.get("link_type"))} <a href="{link.get("url")}">{Link.get_name(link)}</a> ' \
+                   f'({", ".join(genres) if genres else ""}). ' \
+                   f'Saved at: {datetime.datetime.fromisoformat(saved_link.get("saved_at")).strftime(OUTPUT_DATE_FORMAT)}\n'
         return msg
-
-    def _get_saved_links_by_user(self):
-        saved_links_by_user = (SavedLink.select().join(Link).join(User).where(
-            (SavedLink.user_id == self.update.message.from_user.id) & (SavedLink.deleted_at.is_null())))
-        return saved_links_by_user
 
 
 class DeleteSavedLinksCommand(Command):
@@ -550,6 +462,10 @@ class DeleteSavedLinksCommand(Command):
     """
     COMMAND = 'deletesavedlinks'
 
+    def __init__(self, update: Update, context: CallbackContext):
+        super().__init__(update, context)
+        self.spotify_api_client = SpotifyAPIClient()
+
     def get_response(self):
         keyboard = self._build_keyboard()
         if not keyboard:
@@ -557,32 +473,16 @@ class DeleteSavedLinksCommand(Command):
         return 'Choose a saved link to delete:', keyboard
 
     def _build_keyboard(self):
-        saved_links = self._get_saved_links_by_user()
-        if not saved_links:
+        saved_links_response = self.spotify_api_client.get_saved_links(self.update.message.from_user.id)
+        if not saved_links_response:
             return None
-        return DeleteSavedLinkButton.get_keyboard_markup(saved_links)
-
-    def _get_saved_links_by_user(self):
-        saved_links_by_user = (SavedLink
-            .select()
-            .join(Link)
-            .join(User)
-            .where(
-            (SavedLink.user_id == self.update.message.from_user.id) & (SavedLink.deleted_at.is_null())))
-        return saved_links_by_user
+        return DeleteSavedLinkButton.get_keyboard_markup(saved_links_response)
 
 
 class FollowArtistMixin:
-    @staticmethod
-    def _get_followed_artists_by_user(update: Update):
-        followed_artists_by_user = (
-            FollowedArtist.select().join(Artist, on=FollowedArtist.artist_id == Artist.id).join(User,
-                                                                                                on=FollowedArtist.user_id == User.id).where(
-                FollowedArtist.user_id == update.message.from_user.id))
-        return followed_artists_by_user
 
-    @staticmethod
-    def _not_following_any_artist_message():
+    @property
+    def not_following_any_artist_message(self):
         return 'You are not following any artist'
 
 
@@ -593,19 +493,25 @@ class FollowedArtistsCommand(FollowArtistMixin, Command):
     """
     COMMAND = 'followedartists'
 
-    def get_response(self):
-        followed_artists = self._get_followed_artists_by_user(self.update)
-        return self._build_message(followed_artists), None
+    def __init__(self, update: Update, context: CallbackContext):
+        super().__init__(update, context)
+        self.telegram_api_client = TelegramAPIClient()
+        self.spotify_api_client = SpotifyAPIClient()
 
-    def _build_message(self, followed_artists):
-        if not followed_artists:
-            return self._not_following_any_artist_message()
+    def get_response(self):
+        followed_artists_response = self.spotify_api_client.get_followed_artists(self.update.message.from_user.id)
+        return self._build_message(followed_artists_response), None
+
+    def _build_message(self, followed_artists_response):
+        if not followed_artists_response:
+            return self.not_following_any_artist_message
 
         msg = '<strong>Following artists:</strong> \n'
-        for followed_artist in followed_artists:
-            msg += f'- {followed_artist.artist.get_emoji()} ' \
-                   f'<a href="{followed_artist.artist.spotify_url}">{str(followed_artist.artist)}</a> ' \
-                   f'Followed at: {followed_artist.followed_at.strftime("%Y/%m/%d")}\n'
+        for followed_artist in followed_artists_response:
+            artist = followed_artist.get('artist')
+            msg += f'- {emojis.EMOJI_ARTIST} ' \
+                   f'<a href="{artist.get("url")}">{artist.get("name")}</a> ' \
+                   f'Followed at: {datetime.datetime.fromisoformat(followed_artist.get("followed_at")).strftime(OUTPUT_DATE_FORMAT)}\n'
         return msg
 
 
@@ -616,53 +522,60 @@ class FollowArtistCommand(CreateOrUpdateMixin, Command):
     """
     COMMAND = 'followartist'
 
-    def __init__(self, update, context):
+    def __init__(self, update: Update, context: CallbackContext):
         super().__init__(update, context)
-        self.spotify_client = SpotifyClient()
+        self.spotify_api_client = SpotifyAPIClient()
+        self.telegram_api_client = TelegramAPIClient()
 
     def get_response(self):
         if not self.args:
-            return self._help_message(), None
+            return self.help_message, None
         url = self.args[0]
         try:
-            artist = self._process_artist_url(url)
+            spotify_artist_id = self._extract_artist_id_from_url(url)
         except ValueError:
-            log.exception('Error trying to process artist url')
-            return self._error_invalid_link_message()
-        user = self.save_user(self.update)
-        followed_artist, was_created = self._follow_artist(artist, user)
-        return self._build_message(followed_artist, was_created), None
+            log.warning('Error trying to process artist url')
+            return self.error_invalid_link_message, None
+        user = self.save_user(self.update.message.from_user)
+        artist = self.spotify_api_client.get_artist(spotify_artist_id)
+        try:
+            followed_artist_response = self.spotify_api_client.create_followed_artist(artist.get('id'), user.get('id'))
+        except APIClientException as e:
+            response = e.args[0].response
+            if response.status_code == 400 and "unique" in response.text:
+                return self.already_following_this_artist_message, None
+            raise e
+        return self._build_message(followed_artist_response), None
 
-    def _follow_artist(self, artist: Artist, user: User) -> FollowedArtist:
-        return self.save_followed_artist(artist, user)
-
-    def _process_artist_url(self, url: str) -> Artist:
+    def _extract_artist_id_from_url(self, url: str) -> Artist:
         url = self._url_cleaning_and_validations(url)
-        artist_id = self.spotify_client.get_entity_id_from_url(url)
-        spotify_artist = self.spotify_client.client.artist(artist_id)
-        return self.save_artist(spotify_artist)
+        return SpotifyUtils.get_entity_id_from_url(url)
 
-    def _url_cleaning_and_validations(self, url: str) -> str:
-        if not self.spotify_client.is_valid_url(url):
-            raise ValueError(self._error_invalid_link_message())
-        if self.spotify_client.get_link_type(url) != LinkType.ARTIST:
-            raise ValueError(self._error_invalid_link_message())
-        cleaned_url = self.spotify_client.clean_url(url)
+    @staticmethod
+    def _url_cleaning_and_validations(url: str) -> str:
+        if not SpotifyUtils.is_valid_url(url):
+            raise ValueError
+        if SpotifyUtils.get_link_type_from_url(url) != LinkType.ARTIST.value:
+            raise ValueError
+        cleaned_url = SpotifyUtils.clean_url(url)
         return cleaned_url
 
-    @staticmethod
-    def _error_invalid_link_message():
+    @property
+    def already_following_this_artist_message(self):
+        return 'You are already following this artist'
+
+    @property
+    def error_invalid_link_message(self):
         return 'Invalid artist link'
 
-    @staticmethod
-    def _help_message():
+    @property
+    def help_message(self):
         return 'Command usage:  /followartist spotify_artist_url'
 
     @staticmethod
-    def _build_message(followed_artist: FollowedArtist, was_created: bool) -> str:
-        if not was_created:
-            return 'You are already following this artist'
-        msg = f'<strong>Followed artist:</strong> {followed_artist.artist.name}. \n'
+    def _build_message(followed_artist_response: OrderedDict) -> str:
+        artist = followed_artist_response.get('artist')
+        msg = f'<strong>Followed artist:</strong> {artist.get("name")}. \n'
         msg += 'You will be aware of it\'s albums releases'
         return msg
 
@@ -674,14 +587,18 @@ class UnfollowArtistsCommand(FollowArtistMixin, Command):
     """
     COMMAND = 'unfollowartists'
 
+    def __init__(self, update: Update, context: CallbackContext):
+        super().__init__(update, context)
+        self.spotify_api_client = SpotifyAPIClient()
+
     def get_response(self):
         keyboard = self._build_keyboard()
         if not keyboard:
-            return self._not_following_any_artist_message(), None
+            return self.not_following_any_artist_message, None
         return 'Choose an artist to unfollow:', keyboard
 
     def _build_keyboard(self):
-        followed_artists = self._get_followed_artists_by_user(self.update)
+        followed_artists = self.spotify_api_client.get_followed_artists(self.update.message.from_user.id)
         if not followed_artists:
             return None
         return UnfollowArtistButton.get_keyboard_markup(followed_artists)
@@ -696,57 +613,26 @@ class CheckArtistsNewMusicReleasesCommand(FollowArtistMixin, CreateOrUpdateMixin
 
     def __init__(self, update: Update, context: CallbackContext):
         super().__init__(update, context)
-        self.spotify_client = SpotifyClient()
+        self.spotify_api_client = SpotifyAPIClient()
 
     def get_response(self):
-        followed_artists = self._get_followed_artists_by_user(self.update)
-        if not followed_artists:
-            return self._not_following_any_artist_message(), None
-        self._update_followed_artists_albums(followed_artists)
-        message = self._build_message(followed_artists), None
-        self._update_followed_artists_last_lookup(followed_artists)
+        new_music_releases_response = self.spotify_api_client.check_new_music_releases(self.update.message.from_user.id)
+        if not new_music_releases_response:
+            return self.no_new_music_message, None
+        message = self._build_message(new_music_releases_response), None
         return message
 
     @staticmethod
-    def _update_followed_artists_last_lookup(followed_artists: []):
-        for followed_artist in followed_artists:
-            followed_artist.last_lookup = datetime.datetime.now()
-            followed_artist.save()
+    def _build_message(new_music_releases_response: []) -> str:
+        msg = 'Found new music: \n'
+        for new_album in new_music_releases_response:
+            new_album_first_artist = new_album.get('artists')[0]
+            msg += f'    - <a href="{new_album.get("url")}">{new_album_first_artist.get("name")} - {new_album.get("name")} ({new_album.get("album_type")})</a> ' \
+                   f'Released at: {datetime.datetime.fromisoformat(new_album.get("release_date")).strftime(OUTPUT_DATE_FORMAT)} \n'
+        return msg
 
-    def _update_followed_artists_albums(self, followed_artists: []):
-        for followed_artist in followed_artists:
-            spotify_artist_albums = self.spotify_client.get_all_artist_albums(followed_artist.artist)
-            for spotify_album in spotify_artist_albums:
-                self.save_album(spotify_album)
-
-    def _build_message(self, followed_artists: []) -> str:
-        if not followed_artists:
-            return self._not_following_any_artist_message()
-        new_albums_found = False
-        for followed_artist in followed_artists:
-            new_artist_albums = self._extract_new_artist_albums(followed_artist)
-            if not new_artist_albums:
-                continue
-            new_albums_found = True
-            msg = f'Found new {followed_artist.artist.name} music: \n'
-            for new_album in new_artist_albums:
-                msg += f'    - <a href="">{new_album.name} ({new_album.album_type})</a> ' \
-                       f'Released at: {new_album.release_date.strftime("%Y/%m/%d")} \n'
-            return msg
-        if not new_albums_found:
-            return self._no_new_music_message()
-
-    @staticmethod
-    def _extract_new_artist_albums(followed_artist: FollowedArtist) -> []:
-        last_artist_lookup = followed_artist.last_lookup
-        new_albums = []
-        for album in followed_artist.artist.albums:
-            if last_artist_lookup and album.release_date >= last_artist_lookup.date():
-                new_albums.append(album)
-        return new_albums
-
-    @staticmethod
-    def _no_new_music_message():
+    @property
+    def no_new_music_message(self):
         return 'There is no new music of your followed artists'
 
 
@@ -757,26 +643,21 @@ class StatsCommand(Command):
     """
     COMMAND = 'stats'
 
+    def __init__(self, update: Update, context: CallbackContext):
+        super().__init__(update, context)
+        self.telegram_api_client = TelegramAPIClient()
+
     def get_response(self):
-        stats_by_user = self._get_stats_by_user()
-        return self._build_message(stats_by_user), None
+        users = self.telegram_api_client.get_stats(self.update.message.chat_id).get('users_with_chat_link_count', [])
+        return self._build_message(users), None
 
     @staticmethod
-    def _build_message(stats_by_user):
+    def _build_message(users: []):
         msg = '<strong>Links sent by the users from the beginning in this chat:</strong> \n'
-        for user in stats_by_user:
+        for user in users:
             msg += '- {} <strong>{}:</strong> {}\n'.format(
-                User.get_emoji(),
-                user.username or user.first_name,
-                user.links
+                emojis.EMOJI_USER,
+                user.get('username', user.get('first_name')),
+                user.get('sent_links_chat__count')
             )
         return msg
-
-    def _get_stats_by_user(self):
-        stats_by_user = User.select(User, fn.Count(ChatLink.id).alias('links')) \
-            .join(ChatLink, on=ChatLink.sent_by) \
-            .join(Chat, on=ChatLink.chat) \
-            .where(Chat.id == self.update.message.chat_id) \
-            .group_by(User) \
-            .order_by(SQL('links').desc())
-        return stats_by_user
