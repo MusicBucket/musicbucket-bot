@@ -3,6 +3,7 @@ version: '3.7'
 services:
     bot:
         build: .
+        restart: "always"
         volumes:
             - ./src/:/app
         env_file:
