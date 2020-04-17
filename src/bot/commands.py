@@ -657,7 +657,7 @@ class StatsCommand(Command):
         for user in users:
             msg += '- {} <strong>{}:</strong> {}\n'.format(
                 emojis.EMOJI_USER,
-                user.get('username', user.get('first_name')),
+                user.get('username') or user.get('first_name'),
                 user.get('sent_links_chat__count')
             )
         return msg
