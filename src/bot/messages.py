@@ -63,7 +63,7 @@ class UrlProcessor(ReplyMixin, LoggerMixin, SpotifyUtils, CreateOrUpdateMixin):
             )
         elif link.get('link_type') == LinkType.TRACK.value:
             msg += '{} {} by <strong>{}</strong>\n'.format(
-                emojize(':musical_note:', use_aliases=True),
+                emojis.EMOJI_TRACK,
                 link.get('track').get('name'),
                 link.get('track').get('artists')[0].get('name'),
             )
