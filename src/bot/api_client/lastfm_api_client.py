@@ -9,8 +9,11 @@ class LastfmAPIClient(BaseAPIClient):
         return self.process_request(url)
 
     def set_lastfm_user(self, user_id: str, lastfm_username: str) -> {}:
-        url = self._get_url(f'users/set-lastfm-user/{user_id}/')
-        data = {'username': lastfm_username}
+        url = self._get_url(f'users/set-lastfm-user/')
+        data = {
+            'username': lastfm_username,
+            'user_id': user_id,
+        }
         return self.process_request(url, method='post', data=data)
 
     def _get_url(self, endpoint_url) -> str:

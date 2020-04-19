@@ -397,6 +397,7 @@ class LastFMSetCommand(Command, CreateOrUpdateMixin):
 
     def __init__(self, update: Update, context: CallbackContext):
         super().__init__(update, context)
+        self.telegram_api_client = TelegramAPIClient()
         self.lastfm_api_client = LastfmAPIClient()
 
     def get_response(self):
@@ -417,7 +418,8 @@ class LastFMSetCommand(Command, CreateOrUpdateMixin):
             return None
         username = self.args[0]
         username = username.replace('@', '')
-        lastfm_user = self.lastfm_api_client.set_lastfm_user(user.id, username)
+        user = self.telegram_api_client.create_user(user)
+        lastfm_user = self.lastfm_api_client.set_lastfm_user(user.get('id'), username)
         return lastfm_user.get('username')
 
     @staticmethod
