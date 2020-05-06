@@ -373,7 +373,7 @@ class NowPlayingCommand(Command):
         track_name = now_playing_data.get('track_name')
         cover = now_playing_data.get('cover')
 
-        msg = f"<b>{lastfm_username}</b>'s now playing:\n"
+        msg = f"<b>{lastfm_user.get('username')}</b>'s now playing:\n"
         msg += f"{emojis.EMOJI_TRACK} {track_name}\n"
         if album_name:
             msg += f"{emojis.EMOJI_ALBUM} {album_name}\n"
