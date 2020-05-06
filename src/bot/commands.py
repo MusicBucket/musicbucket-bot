@@ -361,12 +361,12 @@ class NowPlayingCommand(Command):
 
     @staticmethod
     def _build_message(now_playing_data):
-        lastfm_username = now_playing_data.get('lastfm_user').get('username')
-        if not lastfm_username:
+        lastfm_user = now_playing_data.get('lastfm_user')
+        if not lastfm_user or not lastfm_user.get('username'):
             return f'There is no Last.fm username for your user. Please set your username with:\n' \
                    f'<i>/lastfmset username</i>'
         if not now_playing_data.get('is_playing_now'):
-            return f'<b>{lastfm_username}</b> is not currently playing music'
+            return f'<b>{lastfm_user.get("username")}</b> is not currently playing music'
 
         artist_name = now_playing_data.get('artist_name')
         album_name = now_playing_data.get('album_name')
