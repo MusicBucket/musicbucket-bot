@@ -650,16 +650,19 @@ class StatsCommand(Command):
         self.telegram_api_client = TelegramAPIClient()
 
     def get_response(self):
-        users = self.telegram_api_client.get_stats(self.update.message.chat_id).get('users_with_chat_link_count', [])
-        return self._build_message(users), None
+        stats = self.telegram_api_client.get_stats(self.update.message.chat_id)
+        return self._build_message(stats), None
 
     @staticmethod
-    def _build_message(users: []):
+    def _build_message(stats: {}):
         msg = '<strong>Links sent by the users from the beginning in this chat:</strong> \n'
+        users = stats.get('users_with_chat_link_count', [])
+        most_sent_genres = stats.get('most_sent_genres', [])
         for user in users:
             msg += '- {} <strong>{}:</strong> {}\n'.format(
                 emojis.EMOJI_USER,
                 user.get('username') or user.get('first_name'),
                 user.get('sent_links_chat__count')
             )
+        msg += f'\n <strong>Most sent genres:</strong> {", ".join(most_sent_genres)}'
         return msg
