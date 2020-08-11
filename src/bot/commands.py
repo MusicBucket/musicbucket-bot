@@ -236,7 +236,9 @@ class MusicCommand(Command):
     def _group_links_by_user(links):
         last_week_links = defaultdict(list)
         for link in links:
-            last_week_links[link.get('sent_by').get('username', link.get('sent_by').get('first_name'))].append(link)
+            last_week_links[
+                link.get('sent_by').get('username') if link.get('sent_by').get('username') else link.get('sent_by').get(
+                    'first_name')].append(link)
         return dict(last_week_links)
 
 
@@ -291,7 +293,9 @@ class MusicFromBeginningCommand(Command):
     def _group_links_by_user(links):
         all_time_links = defaultdict(list)
         for link in links:
-            all_time_links[link.get('sent_by').get('username', link.get('sent_by').get('first_name'))].append(link)
+            all_time_links[
+                link.get('sent_by').get('username') if link.get('sent_by').get('username') else link.get('sent_by').get(
+                    'first_name')].append(link)
         return dict(all_time_links)
 
 
