@@ -207,7 +207,7 @@ class MusicCommand(Command):
                 link = sent_link.get('link')
                 genres = Link.get_genres(link)
                 msg += '    {} <a href="{}">{}</a> {}\n'.format(
-                    emojis.get_music_emoji(link.get('type')),
+                    emojis.get_music_emoji(link.get('link_type')),
                     link.get('url'),
                     Link.get_name(link),
                     '({})'.format(', '.join(genres)) if genres else ''
@@ -236,7 +236,7 @@ class MusicCommand(Command):
     def _group_links_by_user(links):
         last_week_links = defaultdict(list)
         for link in links:
-            last_week_links[link.get('sent_by').get('username', link.get('first_name'))].append(link)
+            last_week_links[link.get('sent_by').get('username', link.get('sent_by').get('first_name'))].append(link)
         return dict(last_week_links)
 
 
@@ -269,7 +269,7 @@ class MusicFromBeginningCommand(Command):
                 link = sent_link.get('link')
                 genres = Link.get_genres(link)
                 msg += '    {}  <a href="{}">{}</a> {}\n'.format(
-                    emojis.get_music_emoji(link.get('type')),
+                    emojis.get_music_emoji(link.get('link_type')),
                     f'[{datetime.datetime.fromisoformat(sent_link.get("sent_at")).strftime(OUTPUT_DATE_FORMAT)}]',
                     link.get('url'),
                     Link.get_name(link),
@@ -291,7 +291,7 @@ class MusicFromBeginningCommand(Command):
     def _group_links_by_user(links):
         all_time_links = defaultdict(list)
         for link in links:
-            all_time_links[link.get('sent_by').get('username', link.get('first_name'))].append(link)
+            all_time_links[link.get('sent_by').get('username', link.get('sent_by').get('first_name'))].append(link)
         return dict(all_time_links)
 
 
