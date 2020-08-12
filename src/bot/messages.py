@@ -74,7 +74,7 @@ class UrlProcessor(ReplyMixin, LoggerMixin, SpotifyUtils, CreateOrUpdateMixin):
         msg += '<strong>Genres:</strong> {}'.format(genres if genres else 'N/A')
         save_link_button_keyboard_markup = SaveLinkButton.get_keyboard_markup(link.get('id'))
         preview_track = sent_link.get('spotify_preview_track', None)
-        if preview_track.get('preview_url'):
+        if preview_track:
             performer = preview_track.get('artists')[0].get('name', 'unknown')
             title = preview_track.get('name', 'unknown')
             self.reply(update=self.update, context=self.context, message=msg, reply_type=ReplyType.AUDIO,
