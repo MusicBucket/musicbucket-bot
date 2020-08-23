@@ -420,7 +420,7 @@ class TopAlbumsCommand(Command, CreateOrUpdateMixin):
         if not top_albums:
             return "You have not top albums"
         msg = f"<strong>{top_albums_data.get('lastfm_username')}</strong>'s top albums of last 7 days: \n"
-        for album in top_albums:
+        for album in top_albums[:10]:
             msg += f"- {emojis.EMOJI_ALBUM} <strong>{album['artist']}</strong> - <strong>{album['title']}</strong>. {album['scrobbles']} scrobbles\n"
         return msg
 
