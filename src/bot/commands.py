@@ -57,6 +57,11 @@ class CommandFactory:
         command.run()
 
     @staticmethod
+    def run_top_albums_command(update: Update, context: CallbackContext):
+        command = TopAlbumsCommand(update, context)
+        command.run()
+
+    @staticmethod
     def run_lastfmset_command(update: Update, context: CallbackContext):
         command = LastFMSetCommand(update, context)
         command.run()
@@ -390,6 +395,33 @@ class NowPlayingCommand(Command):
     def _save_link(self, url):
         url_processor = UrlProcessor(self.update, self.context, url, self)
         url_processor.process()
+
+
+class TopAlbumsCommand(Command, CreateOrUpdateMixin):
+    """
+    Command /topalbums
+    Gets the Last.fm top albums of the given user
+    """
+    COMMAND = 'topalbums'
+
+    def __init__(self, update: Update, context: CallbackContext):
+        super().__init__(update, context)
+        self.lastfm_api_client = LastfmAPIClient()
+
+    def get_response(self):
+        self.save_user(self.update.message.from_user)
+        top_albums_data = self.lastfm_api_client.get_top_albums(user_id=self.update.message.from_user.id)
+        return self._build_message(top_albums_data), None
+
+    @staticmethod
+    def _build_message(top_albums_data: {}) -> str:
+        top_albums = top_albums_data.get('top_albums', [])
+        if not top_albums:
+            return "You have not top albums"
+        msg = f"<strong>{top_albums_data.get('lastfm_username')}</strong>'s top albums of last 7 days: \n"
+        for album in top_albums:
+            msg += f"- {emojis.EMOJI_ALBUM} <strong>{album['artist']}</strong> - <strong>{album['title']}</strong>. {album['scrobbles']} scrobbles\n"
+        return msg
 
 
 class LastFMSetCommand(Command, CreateOrUpdateMixin):
