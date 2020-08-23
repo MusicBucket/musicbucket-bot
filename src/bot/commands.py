@@ -174,6 +174,7 @@ class HelpCommand(Command):
               "-  /recommendations Returns a list of 10 recommended tracks. " \
               "based on the sent albums from the last week. \n" \
               "-  /np Now Playing. Returns track information about what you are currently playing in Last.fm. \n" \
+              "-  /topalbums Top Albums. Returns the Last.fm top albums of your user. \n" \
               "-  /lastfmset username Sets a Last.fm username to your Telegram user. \n" \
               "-  /stats Retrieves an user list with a links counter for the current chat. \n" \
               "-  @music_bucket_bot artist|album|track name Search for an artist, an album or a track. " \
