@@ -18,6 +18,14 @@ class LastfmAPIClient(BaseAPIClient):
         url = self._get_url(f'users/{user_id}/top-albums/')
         return self.process_request(url)
 
+    def get_top_artists(self, user_id: str, period=PERIOD_7DAYS) -> []:
+        url = self._get_url(f'users/{user_id}/top-artists/')
+        return self.process_request(url)
+
+    def get_top_tracks(self, user_id: str, period=PERIOD_7DAYS) -> []:
+        url = self._get_url(f'users/{user_id}/top-tracks/')
+        return self.process_request(url)
+
     def set_lastfm_user(self, user_id: str, lastfm_username: str) -> {}:
         url = self._get_url(f'users/set-lastfm-user/')
         data = {

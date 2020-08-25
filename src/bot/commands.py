@@ -62,6 +62,16 @@ class CommandFactory:
         command.run()
 
     @staticmethod
+    def run_top_artists_command(update: Update, context: CallbackContext):
+        command = TopArtistsCommand(update, context)
+        command.run()
+
+    @staticmethod
+    def run_top_tracks_command(update: Update, context: CallbackContext):
+        command = TopTracksCommand(update, context)
+        command.run()
+
+    @staticmethod
     def run_lastfmset_command(update: Update, context: CallbackContext):
         command = LastFMSetCommand(update, context)
         command.run()
@@ -175,6 +185,8 @@ class HelpCommand(Command):
               "based on the sent albums from the last week. \n" \
               "-  /np Now Playing. Returns track information about what you are currently playing in Last.fm. \n" \
               "-  /topalbums Top Albums. Returns the Last.fm top albums of your user. \n" \
+              "-  /topartists Top Artists. Returns the Last.fm top artists of your user. \n" \
+              "-  /toptracks Top Tracks. Returns the Last.fm top tracks of your user. \n" \
               "-  /lastfmset username Sets a Last.fm username to your Telegram user. \n" \
               "-  /stats Retrieves an user list with a links counter for the current chat. \n" \
               "-  @music_bucket_bot artist|album|track name Search for an artist, an album or a track. " \
@@ -416,12 +428,78 @@ class TopAlbumsCommand(Command, CreateOrUpdateMixin):
 
     @staticmethod
     def _build_message(top_albums_data: {}) -> str:
+        lastfm_user = top_albums_data.get('lastfm_user')
+        if not lastfm_user or not lastfm_user.get('username'):
+            return f'There is no Last.fm username for your user. Please set your username with:\n' \
+                   f'<i>/lastfmset username</i>'
         top_albums = top_albums_data.get('top_albums', [])
         if not top_albums:
             return "You have not top albums"
-        msg = f"<strong>{top_albums_data.get('lastfm_username')}</strong>'s top albums of last 7 days: \n"
+        msg = f"<strong>{lastfm_user.get('username')}</strong>'s top albums of last 7 days: \n"
         for album in top_albums[:10]:
             msg += f"- {emojis.EMOJI_ALBUM} <strong>{album['artist']}</strong> - <strong>{album['title']}</strong>. {album['scrobbles']} scrobbles\n"
+        return msg
+
+
+class TopArtistsCommand(Command, CreateOrUpdateMixin):
+    """
+    Command /topartists
+    Gets the Last.fm top artists of the given user
+    """
+    COMMAND = 'topartists'
+
+    def __init__(self, update: Update, context: CallbackContext):
+        super().__init__(update, context)
+        self.lastfm_api_client = LastfmAPIClient()
+
+    def get_response(self):
+        self.save_user(self.update.message.from_user)
+        top_artists_data = self.lastfm_api_client.get_top_artists(user_id=self.update.message.from_user.id)
+        return self._build_message(top_artists_data), None
+
+    @staticmethod
+    def _build_message(top_artists_data: {}) -> str:
+        lastfm_user = top_artists_data.get('lastfm_user')
+        if not lastfm_user or not lastfm_user.get('username'):
+            return f'There is no Last.fm username for your user. Please set your username with:\n' \
+                   f'<i>/lastfmset username</i>'
+        top_artists = top_artists_data.get('top_artists', [])
+        if not top_artists:
+            return "You have not top artists"
+        msg = f"<strong>{lastfm_user.get('username')}</strong>'s top artists of last 7 days: \n"
+        for artist in top_artists[:10]:
+            msg += f"- {emojis.EMOJI_ARTIST} <strong>{artist['name']}</strong>. {artist['scrobbles']} scrobbles\n"
+        return msg
+
+
+class TopTracksCommand(Command, CreateOrUpdateMixin):
+    """
+    Command /toptracks
+    Gets the Last.fm top albums of the given user
+    """
+    COMMAND = 'toptracks'
+
+    def __init__(self, update: Update, context: CallbackContext):
+        super().__init__(update, context)
+        self.lastfm_api_client = LastfmAPIClient()
+
+    def get_response(self):
+        self.save_user(self.update.message.from_user)
+        top_tracks_data = self.lastfm_api_client.get_top_tracks(user_id=self.update.message.from_user.id)
+        return self._build_message(top_tracks_data), None
+
+    @staticmethod
+    def _build_message(top_tracks_data: {}) -> str:
+        lastfm_user = top_tracks_data.get('lastfm_user')
+        if not lastfm_user or not lastfm_user.get('username'):
+            return f'There is no Last.fm username for your user. Please set your username with:\n' \
+                   f'<i>/lastfmset username</i>'
+        top_tracks = top_tracks_data.get('top_tracks', [])
+        if not top_tracks:
+            return "You have not top tracks"
+        msg = f"<strong>{lastfm_user.get('username')}</strong>'s top tracks of last 7 days: \n"
+        for track in top_tracks[:10]:
+            msg += f"- {emojis.EMOJI_ALBUM} <strong>{track['artist']}</strong> - <strong>{track['title']}</strong>. {track['scrobbles']} scrobbles\n"
         return msg
 
 

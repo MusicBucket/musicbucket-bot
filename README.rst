@@ -49,6 +49,8 @@ Commands
 -  ``/mymusic`` Retrieves the music that you shared in all the chats.
    It has to be called from a private conversation.
 - ``/topalbums`` Top Albums. Returns the Last.fm top albums of your user.
+- ``/topartists`` Top Artists. Returns the Last.fm top artists of your user.
+- ``/toptracks`` Top Tracks. Returns the Last.fm top tracks of your user.
 -  ``/np`` Now Playing. Returns track information about what you are
    currently playing in Last.fm.
 -  ``/lastfmset username`` Sets a Last.fm username to your Telegram

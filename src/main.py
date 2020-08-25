@@ -13,7 +13,7 @@ from bot.models import Link, Artist, Genre, User, Chat, Album, Track, AlbumArtis
 from bot.commands import CommandFactory, MusicCommand, MusicFromBeginningCommand, MyMusicCommand, NowPlayingCommand, \
     LastFMSetCommand, SavedLinksCommand, DeleteSavedLinksCommand, StatsCommand, StartCommand, HelpCommand, \
     FollowArtistCommand, FollowedArtistsCommand, UnfollowArtistsCommand, CheckArtistsNewMusicReleasesCommand, \
-    TopAlbumsCommand
+    TopAlbumsCommand, TopArtistsCommand, TopTracksCommand
 from bot.search import SearchInline
 
 load_dotenv()
@@ -75,6 +75,12 @@ def main():
     )
     dispatcher.add_handler(
         CommandHandler(TopAlbumsCommand.COMMAND, CommandFactory.run_top_albums_command)
+    )
+    dispatcher.add_handler(
+        CommandHandler(TopArtistsCommand.COMMAND, CommandFactory.run_top_artists_command)
+    )
+    dispatcher.add_handler(
+        CommandHandler(TopTracksCommand.COMMAND, CommandFactory.run_top_tracks_command)
     )
     dispatcher.add_handler(
         CommandHandler(LastFMSetCommand.COMMAND, CommandFactory.run_lastfmset_command, pass_args=True)
