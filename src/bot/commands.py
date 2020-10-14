@@ -379,6 +379,7 @@ class NowPlayingCommand(Command):
         url_candidate = now_playing_data.get('url_candidate')
         if url_candidate:
             self._save_link(url_candidate)
+            return None, None
         else:
             return msg, None
 
