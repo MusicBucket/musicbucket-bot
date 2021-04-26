@@ -71,5 +71,5 @@ class ReplyMixin:
         chat_id = update.message.chat_id
         reply_to_message_id = update.message.message_id
         context.bot.send_audio(chat_id, audio, title=title, performer=performer, caption=caption,
-                               reply_to_message_id=reply_to_message_id, disable_web_page_preview=True,
+                               reply_to_message_id=reply_to_message_id,
                                parse_mode=ParseMode.HTML, reply_markup=reply_markup)
