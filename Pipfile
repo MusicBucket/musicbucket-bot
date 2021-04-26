@@ -19,4 +19,4 @@ sentry-sdk = "==0.8.0"
 psycopg2-binary = "==2.8.6"
 
 [requires]
-python_version = "3.7"
+python_version = "3.9"
