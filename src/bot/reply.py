@@ -27,11 +27,18 @@ class ReplyMixin:
 
     def _reply_text(self, update, message, reply_markup=None, disable_web_page_preview=True):
         """Replies the message to the original chat splitting the message if necessary"""
+
+        # For some reason, can occur that message is None at this point
+        if not message:
+            return
+
+        # If text can be sent in a single message
         if len(message) <= self.MAX_RESPONSE_LENGTH:
             update.message.reply_text(message, disable_web_page_preview=disable_web_page_preview,
                                       parse_mode=ParseMode.HTML, reply_markup=reply_markup)
             return
 
+        # If the text is too large that has to be splitted into many messages
         parts = []
         while len(message) > 0:
             if len(message) > self.MAX_RESPONSE_LENGTH:

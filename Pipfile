@@ -18,7 +18,7 @@ peewee = "==3.11.2"
 pylast = "*"
 musicbrainzngs = "*"
 sentry-sdk = "==0.8.0"
-psycopg2 = "*"
+psycopg2-binary = "*"
 
 [requires]
 python_version = "3.7"
