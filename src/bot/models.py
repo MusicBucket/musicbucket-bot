@@ -69,6 +69,22 @@ class Track(EmojiModelMixin):
 class Link(EmojiModelMixin):
 
     @staticmethod
+    def get_genres(link: OrderedDict):
+        link_type = link.get('link_type')
+        artist = link.get('artist')
+        album = link.get('album')
+        track = link.get('track')
+        genres = None
+        if link_type == LinkType.ARTIST.value:
+            genres = artist.get('genres')
+        elif link_type == LinkType.ALBUM.value:
+            genres = album.get('artists')[0].get('genres') if album.get('artists')[0] else None
+        elif link_type == LinkType.TRACK.value:
+            genres = track.get('artists')[0].get('genres') if track.get('artists')[0] else None
+        if not genres:
+            return []
+
+    @staticmethod
     def get_name(link: OrderedDict):
         link_type = link.get('link_type')
         artist = link.get('artist')
