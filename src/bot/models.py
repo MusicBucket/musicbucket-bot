@@ -83,6 +83,7 @@ class Link(EmojiModelMixin):
             genres = track.get('artists')[0].get('genres') if track.get('artists')[0] else None
         if not genres:
             return []
+        return [genre.get('name') for genre in genres]
 
     @staticmethod
     def get_name(link: OrderedDict):
