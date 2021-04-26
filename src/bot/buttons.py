@@ -5,7 +5,7 @@ from telegram.ext import CallbackContext
 
 from bot.api_client.spotify_api_client import SpotifyAPIClient
 from bot.api_client.telegram_api_client import TelegramAPIClient
-from bot.models import FollowedArtist, Link
+from bot.models import Link
 
 
 class BaseButton:

@@ -6,10 +6,7 @@ from os import getenv
 import logging
 
 from bot.buttons import SaveLinkButton, DeleteSavedLinkButton, UnfollowArtistButton
-from bot.db import db
 from bot.messages import MessageProcessor
-from bot.models import Link, Artist, Genre, User, Chat, Album, Track, AlbumArtist, AlbumGenre, ArtistGenre, \
-    TrackArtist, LastFMUsername, SavedLink, ChatLink, FollowedArtist
 from bot.commands import CommandFactory, MusicCommand, MusicFromBeginningCommand, MyMusicCommand, NowPlayingCommand, \
     LastFMSetCommand, SavedLinksCommand, DeleteSavedLinksCommand, StatsCommand, StartCommand, HelpCommand, \
     FollowArtistCommand, FollowedArtistsCommand, UnfollowArtistsCommand, CheckArtistsNewMusicReleasesCommand, \
@@ -26,13 +23,6 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 
-def _setup_database():
-    db.connect()
-    db.create_tables(
-        [User, Chat, Link, ChatLink, Artist, Album, Track, Genre, AlbumArtist, AlbumGenre, ArtistGenre, TrackArtist,
-         LastFMUsername, SavedLink, FollowedArtist])
-
-
 def _setup_sentry():
     public_key = getenv('SENTRY_PUBLIC_KEY', None)
     project_id = getenv('SENTRY_PROJECT_ID', None)
@@ -43,7 +33,6 @@ def _setup_sentry():
 
 def main():
     # Init app
-    _setup_database()
     _setup_sentry()
 
     # Bot start
