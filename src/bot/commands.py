@@ -16,7 +16,7 @@ from bot.messages import UrlProcessor
 from bot.models import Link, CreateOrUpdateMixin, Artist
 from bot.music.music import LinkType
 from bot.music.spotify import SpotifyUtils
-from bot.reply import ReplyMixin
+from bot.reply import ReplyMixin, ReplyType
 from bot.utils import OUTPUT_DATE_FORMAT
 
 log = logging.getLogger(__name__)
@@ -54,6 +54,11 @@ class CommandFactory:
     @staticmethod
     def run_now_playing_command(update: Update, context: CallbackContext):
         command = NowPlayingCommand(update, context)
+        command.run()
+
+    @staticmethod
+    def run_collage_command(update: Update, context: CallbackContext):
+        command = CollageCommand(update, context)
         command.run()
 
     @staticmethod
@@ -184,6 +189,7 @@ class HelpCommand(Command):
               "-  /recommendations Returns a list of 10 recommended tracks. " \
               "based on the sent albums from the last week. \n" \
               "-  /np Now Playing. Returns track information about what you are currently playing in Last.fm. \n" \
+              "-  /collage Returns a collage of your most listened albums in a period. \n" \
               "-  /topalbums Top Albums. Returns the Last.fm top albums of your user. \n" \
               "-  /topartists Top Artists. Returns the Last.fm top artists of your user. \n" \
               "-  /toptracks Top Tracks. Returns the Last.fm top tracks of your user. \n" \
@@ -410,6 +416,54 @@ class NowPlayingCommand(Command):
     def _save_link(self, url):
         url_processor = UrlProcessor(self.update, self.context, url, self)
         url_processor.process()
+
+
+class CollageCommand(Command):
+    """
+    Command /collage
+    Returns an image of a top albums or artists from a given period and custom size
+    """
+    COMMAND = 'collage'
+
+    def __init__(self, update, context):
+        super().__init__(update, context)
+        self.lastfm_api_client = LastfmAPIClient()
+
+    def run(self):
+        """Need to override the method because the response type must be an Image"""
+        self.log_command(self.COMMAND, self.args, self.update)
+        response, reply_markup = self.get_response()
+        if type(response) == bytes:
+            # we have an image
+            self.reply(self.update, self.context, message="", image=response, reply_type=ReplyType.IMAGE,
+                       disable_web_page_preview=not self.WEB_PAGE_PREVIEW,
+                       reply_markup=reply_markup)
+        else:
+            # we have an error message
+            self.reply(self.update, self.context, response, disable_web_page_preview=not self.WEB_PAGE_PREVIEW,
+                       reply_markup=reply_markup)
+
+    def get_response(self):
+        try:
+            collage_image_data = self.lastfm_api_client.get_collage(self.update.message.from_user.id, *self.args[0:3])
+        except APIClientException:
+            # TODO: Check if the APIClientException is a 404
+            return self._build_message(), None
+        except Exception:
+            return self.help_message, None
+        return collage_image_data, None
+
+    @staticmethod
+    def _build_message() -> str:
+        return f'There is no Last.fm username for your user. Please set your username with:\n' \
+               f'<i>/lastfmset username</i>'
+
+    @property
+    def help_message(self):
+        return 'Command usage: ' \
+               '/collage <rows (max:5. Default: 5)> ' \
+               '<cols (max:5. Default: 5)> ' \
+               '<period (7day/1month/3month/6month/12month/overall. Default: 7day>'
 
 
 class TopAlbumsCommand(Command, CreateOrUpdateMixin):

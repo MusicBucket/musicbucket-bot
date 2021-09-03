@@ -53,6 +53,7 @@ Commands
 - ``/toptracks`` Top Tracks. Returns the Last.fm top tracks of your user.
 -  ``/np`` Now Playing. Returns track information about what you are
    currently playing in Last.fm.
+-  ``/collage`` Returns a collage of your most listened albums in a period.
 -  ``/lastfmset username`` Sets a Last.fm username to your Telegram
    user.
 -  ``/stats`` Retrieves an user list with a links counter for the

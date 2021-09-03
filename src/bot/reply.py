@@ -63,8 +63,7 @@ class ReplyMixin:
     @staticmethod
     def _reply_image(update, context, image, caption, reply_markup=None):
         chat_id = update.message.chat_id
-        context.bot.send_photo(chat_id, image, caption=caption, disable_web_page_preview=True,
-                               parse_mode=ParseMode.HTML, reply_markup=reply_markup)
+        context.bot.send_photo(chat_id, image, caption=caption, parse_mode=ParseMode.HTML, reply_markup=reply_markup)
 
     @staticmethod
     def _reply_audio(update, context, audio, caption, performer, title, reply_markup=None):

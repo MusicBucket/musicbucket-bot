@@ -10,7 +10,7 @@ from bot.messages import MessageProcessor
 from bot.commands import CommandFactory, MusicCommand, MusicFromBeginningCommand, MyMusicCommand, NowPlayingCommand, \
     LastFMSetCommand, SavedLinksCommand, DeleteSavedLinksCommand, StatsCommand, StartCommand, HelpCommand, \
     FollowArtistCommand, FollowedArtistsCommand, UnfollowArtistsCommand, CheckArtistsNewMusicReleasesCommand, \
-    TopAlbumsCommand, TopArtistsCommand, TopTracksCommand
+    TopAlbumsCommand, TopArtistsCommand, TopTracksCommand, CollageCommand
 from bot.search import SearchInline
 
 load_dotenv()
@@ -61,6 +61,9 @@ def main():
     )
     dispatcher.add_handler(
         CommandHandler(NowPlayingCommand.COMMAND, CommandFactory.run_now_playing_command)
+    )
+    dispatcher.add_handler(
+        CommandHandler(CollageCommand.COMMAND, CommandFactory.run_collage_command, pass_args=True)
     )
     dispatcher.add_handler(
         CommandHandler(TopAlbumsCommand.COMMAND, CommandFactory.run_top_albums_command)
