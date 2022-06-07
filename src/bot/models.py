@@ -105,7 +105,7 @@ class Link(EmojiModelMixin):
             )
 
 
-class CreateOrUpdateMixin:
+class SaveTelegramEntityMixin:
 
     @staticmethod
     def save_link(url: str, user_id: str, chat_id: str) -> OrderedDict:

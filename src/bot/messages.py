@@ -9,7 +9,7 @@ from telegram.ext import CallbackContext
 from bot import emojis
 from bot.buttons import SaveLinkButton
 from bot.logger import LoggerMixin
-from bot.models import Link, CreateOrUpdateMixin
+from bot.models import Link, SaveTelegramEntityMixin
 from bot.music.music import LinkType
 from bot.music.spotify import SpotifyUtils
 from bot.reply import ReplyMixin, ReplyType
@@ -29,7 +29,7 @@ class MessageProcessor:
             url_processor.process()
 
 
-class UrlProcessor(ReplyMixin, LoggerMixin, SpotifyUtils, CreateOrUpdateMixin):
+class UrlProcessor(ReplyMixin, LoggerMixin, SpotifyUtils, SaveTelegramEntityMixin):
 
     def __init__(self, update, context, url, command=None):
         self.update = update

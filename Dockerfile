@@ -4,10 +4,14 @@ FROM python:3.9
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-# Install dependencies
-COPY Pipfile Pipfile.lock /
-
-RUN pip install pipenv && pipenv install --system
+# Poetry
+COPY pyproject.toml /
+RUN \
+    pip install --upgrade pip && \
+    pip install poetry
+RUN poetry config virtualenvs.create false && \
+    poetry install --no-dev
+# End Poetry
 
 # Set work directory
 WORKDIR /app

@@ -13,7 +13,7 @@ from bot.buttons import DeleteSavedLinkButton, UnfollowArtistButton
 from bot import emojis
 from bot.logger import LoggerMixin
 from bot.messages import UrlProcessor
-from bot.models import Link, CreateOrUpdateMixin, Artist
+from bot.models import Link, SaveTelegramEntityMixin, Artist
 from bot.music.music import LinkType
 from bot.music.spotify import SpotifyUtils
 from bot.reply import ReplyMixin, ReplyType
@@ -119,9 +119,10 @@ class CommandFactory:
         command.run()
 
 
-class Command(ReplyMixin, LoggerMixin):
+class Command(ReplyMixin, SaveTelegramEntityMixin, LoggerMixin):
     COMMAND = None
     WEB_PAGE_PREVIEW = False
+    SAVE_USER_AND_CHAT = True
 
     def __init__(self, update, context):
         self.update = update
@@ -135,6 +136,12 @@ class Command(ReplyMixin, LoggerMixin):
                    reply_markup=reply_markup)
 
     def get_response(self):
+        if self.SAVE_USER_AND_CHAT:
+            self.save_user(self.update.message.from_user)
+            self.save_chat(self.update.message.chat)
+        return self._get_response()
+
+    def _get_response(self):
         raise NotImplementedError()
 
 
@@ -145,7 +152,7 @@ class StartCommand(Command):
     """
     COMMAND = 'start'
 
-    def get_response(self):
+    def _get_response(self):
         return self._build_message(), None
 
     @staticmethod
@@ -166,7 +173,7 @@ class HelpCommand(Command):
     """
     COMMAND = 'help'
 
-    def get_response(self):
+    def _get_response(self):
         return self._build_message(), None
 
     @staticmethod
@@ -214,7 +221,7 @@ class MusicCommand(Command):
         super().__init__(update, context)
         self.telegram_api_client = TelegramAPIClient()
 
-    def get_response(self):
+    def _get_response(self):
         if self.args:
             links = self._get_links_from_user()
         else:
@@ -277,7 +284,7 @@ class MusicFromBeginningCommand(Command):
         super().__init__(update, context)
         self.telegram_api_client = TelegramAPIClient()
 
-    def get_response(self):
+    def _get_response(self):
         if self.args:
             links = self._get_links_from_user()
             all_time_links = self._group_links_by_user(links)
@@ -335,7 +342,7 @@ class MyMusicCommand(Command):
         super().__init__(update, context)
         self.telegram_api_client = TelegramAPIClient()
 
-    def get_response(self):
+    def _get_response(self):
         all_time_links = self._get_all_time_links_from_user()
         return self._build_message(all_time_links), None
 
@@ -378,7 +385,7 @@ class NowPlayingCommand(Command):
         self.lastfm_api_client = LastfmAPIClient()
         self.spotify_api_client = SpotifyAPIClient()
 
-    def get_response(self):
+    def _get_response(self):
         now_playing_data = self.lastfm_api_client.get_now_playing(self.update.message.from_user.id)
         msg = self._build_message(now_playing_data)
 
@@ -443,7 +450,7 @@ class CollageCommand(Command):
             self.reply(self.update, self.context, response, disable_web_page_preview=not self.WEB_PAGE_PREVIEW,
                        reply_markup=reply_markup)
 
-    def get_response(self):
+    def _get_response(self):
         try:
             collage_image_data = self.lastfm_api_client.get_collage(self.update.message.from_user.id, *self.args[0:3])
         except APIClientException:
@@ -466,7 +473,7 @@ class CollageCommand(Command):
                '<period (7day/1month/3month/6month/12month/overall. Default: 7day>'
 
 
-class TopAlbumsCommand(Command, CreateOrUpdateMixin):
+class TopAlbumsCommand(Command):
     """
     Command /topalbums
     Gets the Last.fm top albums of the given user
@@ -477,8 +484,7 @@ class TopAlbumsCommand(Command, CreateOrUpdateMixin):
         super().__init__(update, context)
         self.lastfm_api_client = LastfmAPIClient()
 
-    def get_response(self):
-        self.save_user(self.update.message.from_user)
+    def _get_response(self):
         top_albums_data = self.lastfm_api_client.get_top_albums(user_id=self.update.message.from_user.id)
         return self._build_message(top_albums_data), None
 
@@ -497,7 +503,7 @@ class TopAlbumsCommand(Command, CreateOrUpdateMixin):
         return msg
 
 
-class TopArtistsCommand(Command, CreateOrUpdateMixin):
+class TopArtistsCommand(Command):
     """
     Command /topartists
     Gets the Last.fm top artists of the given user
@@ -508,8 +514,7 @@ class TopArtistsCommand(Command, CreateOrUpdateMixin):
         super().__init__(update, context)
         self.lastfm_api_client = LastfmAPIClient()
 
-    def get_response(self):
-        self.save_user(self.update.message.from_user)
+    def _get_response(self):
         top_artists_data = self.lastfm_api_client.get_top_artists(user_id=self.update.message.from_user.id)
         return self._build_message(top_artists_data), None
 
@@ -528,7 +533,7 @@ class TopArtistsCommand(Command, CreateOrUpdateMixin):
         return msg
 
 
-class TopTracksCommand(Command, CreateOrUpdateMixin):
+class TopTracksCommand(Command):
     """
     Command /toptracks
     Gets the Last.fm top albums of the given user
@@ -539,8 +544,7 @@ class TopTracksCommand(Command, CreateOrUpdateMixin):
         super().__init__(update, context)
         self.lastfm_api_client = LastfmAPIClient()
 
-    def get_response(self):
-        self.save_user(self.update.message.from_user)
+    def _get_response(self):
         top_tracks_data = self.lastfm_api_client.get_top_tracks(user_id=self.update.message.from_user.id)
         return self._build_message(top_tracks_data), None
 
@@ -559,7 +563,7 @@ class TopTracksCommand(Command, CreateOrUpdateMixin):
         return msg
 
 
-class LastFMSetCommand(Command, CreateOrUpdateMixin):
+class LastFMSetCommand(Command):
     """
     Command /lastfmset
     Sets the given Last.fm username to the current user
@@ -571,11 +575,7 @@ class LastFMSetCommand(Command, CreateOrUpdateMixin):
         self.telegram_api_client = TelegramAPIClient()
         self.lastfm_api_client = LastfmAPIClient()
 
-    def get_response(self):
-        # We call save_user() because we want to ensure
-        # that the Telegram User already exists in the API Database
-        self.save_user(self.update.message.from_user)
-
+    def _get_response(self):
         lastfm_username = self._set_lastfm_username(self.update.message.from_user)
         return self._build_message(lastfm_username), None
 
@@ -609,7 +609,7 @@ class SavedLinksCommand(Command):
         super().__init__(update, context)
         self.spotify_api_client = SpotifyAPIClient()
 
-    def get_response(self):
+    def _get_response(self):
         saved_links_response = self.spotify_api_client.get_saved_links(self.update.message.from_user.id)
         return self._build_message(saved_links_response), None
 
@@ -633,13 +633,14 @@ class DeleteSavedLinksCommand(Command):
     Command /deletesavedlinks
     Shows a list of buttons with the saved links and deletes them when clicking
     """
+
     COMMAND = 'deletesavedlinks'
 
     def __init__(self, update: Update, context: CallbackContext):
         super().__init__(update, context)
         self.spotify_api_client = SpotifyAPIClient()
 
-    def get_response(self):
+    def _get_response(self):
         keyboard = self._build_keyboard()
         if not keyboard:
             return 'You have not saved links', None
@@ -671,7 +672,7 @@ class FollowedArtistsCommand(FollowArtistMixin, Command):
         self.telegram_api_client = TelegramAPIClient()
         self.spotify_api_client = SpotifyAPIClient()
 
-    def get_response(self):
+    def _get_response(self):
         followed_artists_response = self.spotify_api_client.get_followed_artists(self.update.message.from_user.id)
         return self._build_message(followed_artists_response), None
 
@@ -688,7 +689,7 @@ class FollowedArtistsCommand(FollowArtistMixin, Command):
         return msg
 
 
-class FollowArtistCommand(CreateOrUpdateMixin, Command):
+class FollowArtistCommand(Command):
     """
     Command /followartist
     Allows user to follow an artist and be notified when they release an album
@@ -700,7 +701,7 @@ class FollowArtistCommand(CreateOrUpdateMixin, Command):
         self.spotify_api_client = SpotifyAPIClient()
         self.telegram_api_client = TelegramAPIClient()
 
-    def get_response(self):
+    def _get_response(self):
         if not self.args:
             return self.help_message, None
         url = self.args[0]
@@ -764,7 +765,7 @@ class UnfollowArtistsCommand(FollowArtistMixin, Command):
         super().__init__(update, context)
         self.spotify_api_client = SpotifyAPIClient()
 
-    def get_response(self):
+    def _get_response(self):
         keyboard = self._build_keyboard()
         if not keyboard:
             return self.not_following_any_artist_message, None
@@ -777,7 +778,7 @@ class UnfollowArtistsCommand(FollowArtistMixin, Command):
         return UnfollowArtistButton.get_keyboard_markup(followed_artists)
 
 
-class CheckArtistsNewMusicReleasesCommand(FollowArtistMixin, CreateOrUpdateMixin, Command):
+class CheckArtistsNewMusicReleasesCommand(FollowArtistMixin, Command):
     """
     Command /checkartistsnewmusicreleases
     Shows a list of buttons with followed artists for checking their new album releases when clicking
@@ -788,7 +789,7 @@ class CheckArtistsNewMusicReleasesCommand(FollowArtistMixin, CreateOrUpdateMixin
         super().__init__(update, context)
         self.spotify_api_client = SpotifyAPIClient()
 
-    def get_response(self):
+    def _get_response(self):
         new_music_releases_response = self.spotify_api_client.check_new_music_releases(self.update.message.from_user.id)
         if not new_music_releases_response:
             return self.no_new_music_message, None
@@ -820,7 +821,7 @@ class StatsCommand(Command):
         super().__init__(update, context)
         self.telegram_api_client = TelegramAPIClient()
 
-    def get_response(self):
+    def _get_response(self):
         stats = self.telegram_api_client.get_stats(self.update.message.chat_id)
         return self._build_message(stats), None
 
