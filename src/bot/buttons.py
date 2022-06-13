@@ -69,7 +69,7 @@ class DeleteSavedLinkButton(BaseButton):
         )
 
     @classmethod
-    def get_keyboard_markup(cls, saved_links):
+    def get_keyboard_markup(cls, saved_links) -> InlineKeyboardMarkup:
         keyboard = []
         for saved_link in saved_links:
             link = saved_link.get('link')
@@ -101,7 +101,7 @@ class UnfollowArtistButton(BaseButton):
         )
 
     @classmethod
-    def get_keyboard_markup(cls, followed_artists):
+    def get_keyboard_markup(cls, followed_artists) -> InlineKeyboardMarkup:
         keyboard = []
         for followed_artist in followed_artists:
             keyboard.append([InlineKeyboardButton(

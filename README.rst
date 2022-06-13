@@ -34,7 +34,7 @@ of the music we share started growing so I started developing this bot.
 Why Spotify?
 _____________
 At the start the bot supported both Spotify and Deezer, but Spotify is the platform that we use
-mostly, so implementing new features for both platforms is complicated and I decided supporting Spotify
+mostly, so implementing new features for both platforms became complicated and I decided supporting Spotify
 only.
 
 
@@ -48,12 +48,12 @@ Commands
 -  ``/deletesavedlinks`` Shows a list of buttons for deleting saved links
 -  ``/mymusic`` Retrieves the music that you shared in all the chats.
    It has to be called from a private conversation.
-- ``/topalbums`` Top Albums. Returns the Last.fm top albums of your user.
-- ``/topartists`` Top Artists. Returns the Last.fm top artists of your user.
-- ``/toptracks`` Top Tracks. Returns the Last.fm top tracks of your user.
+- ``/topalbums [period](7day 'default'/1month/3month/6month/12month/overall)`` Top Albums. Returns the Last.fm top albums of your user.
+- ``/topartists [period](7day 'default'/1month/3month/6month/12month/overall)`` Top Artists. Returns the Last.fm top artists of your user.
+- ``/toptracks [period](7day 'default'/1month/3month/6month/12month/overall)`` Top Tracks. Returns the Last.fm top tracks of your user.
 -  ``/np`` Now Playing. Returns track information about what you are
    currently playing in Last.fm.
--  ``/collage rows cols period`` Returns a collage of your most listened albums in a period.
+-  ``/collage [rows] [cols] [period](7day 'default'/1month/3month/6month/12month/overall)`` Returns a collage of your most listened albums in a period.
 -  ``/lastfmset username`` Sets a Last.fm username to your Telegram
    user.
 -  ``/stats`` Retrieves an user list with a links counter for the

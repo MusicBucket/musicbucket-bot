@@ -1,5 +1,9 @@
 import datetime
 from collections import OrderedDict
+from typing import List, Dict
+
+from telegram import User as TgUser
+from telegram import Chat as TgChat
 
 from bot.api_client.api_client import BaseAPIClient
 
@@ -7,7 +11,7 @@ from bot.api_client.api_client import BaseAPIClient
 class TelegramAPIClient(BaseAPIClient):
     _url = 'telegram/'
 
-    def create_user(self, user):
+    def create_user(self, user: TgUser) -> OrderedDict:
         url = self._get_url('users/')
         data = {
             'telegram_id': user.id,
@@ -17,7 +21,7 @@ class TelegramAPIClient(BaseAPIClient):
         }
         return self.process_request(url, method='post', data=data)
 
-    def create_chat(self, chat):
+    def create_chat(self, chat: TgChat)  -> OrderedDict:
         url = self._get_url('chats/')
         data = {
             'telegram_id': chat.id,
@@ -44,7 +48,7 @@ class TelegramAPIClient(BaseAPIClient):
         return self.process_request(url, method='post', data=data)
 
     def get_sent_links(self, chat_id: str = None, user_id: str = None, user_username: str = None,
-                       since_date: datetime.date = None) -> []:
+                       since_date: datetime.date = None) -> List:
         url = self._get_url('sent-spotify-links/')
         params = {}
         if chat_id:
@@ -57,7 +61,7 @@ class TelegramAPIClient(BaseAPIClient):
             params.update({'sent_at__gte': since_date.strftime(self.DATE_FORMAT)})
         return self.process_request(url, params=params)
 
-    def get_stats(self, chat_id: str) -> []:
+    def get_stats(self, chat_id: str) -> Dict:
         url = self._get_url(f'stats/{chat_id}/')
         return self.process_request(url)
 

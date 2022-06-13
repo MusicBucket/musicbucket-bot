@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from typing import List
 
 from bot.api_client.api_client import BaseAPIClient
 
@@ -73,7 +74,7 @@ class SpotifyAPIClient(BaseAPIClient):
         url = self._get_url(f'followed-artists/{followed_artist_id}/')
         return self.process_request(url, method='delete')
 
-    def check_new_music_releases(self, user_id: int) -> OrderedDict:
+    def check_new_music_releases(self, user_id: int) -> List:
         url = self._get_url(f'followed-artists/check-new-music-releases/')
         params = {'user__telegram_id': user_id}
         return self.process_request(url, params=params)

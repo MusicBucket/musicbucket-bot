@@ -1,8 +1,10 @@
 import datetime
 import logging
 from collections import defaultdict, OrderedDict
+from typing import Dict, Optional, Tuple, Any, List
 
 from telegram import Update
+from telegram import User as TgUser
 from telegram.ext import CallbackContext
 
 from bot.api_client.api_client import APIClientException
@@ -135,7 +137,7 @@ class Command(ReplyMixin, SaveTelegramEntityMixin, LoggerMixin):
         self.reply(self.update, self.context, response, disable_web_page_preview=not self.WEB_PAGE_PREVIEW,
                    reply_markup=reply_markup)
 
-    def get_response(self):
+    def get_response(self) -> Tuple[Any, Optional[Any]]:
         if self.SAVE_USER_AND_CHAT:
             self.save_user(self.update.message.from_user)
             self.save_chat(self.update.message.chat)
@@ -152,11 +154,11 @@ class StartCommand(Command):
     """
     COMMAND = 'start'
 
-    def _get_response(self):
+    def _get_response(self) -> Tuple[Any, Optional[Any]]:
         return self._build_message(), None
 
     @staticmethod
-    def _build_message():
+    def _build_message() -> str:
         msg = "Hey! I'm <strong>MusicBucket Bot</strong>. \n\n" \
               "My main purpose is to help you and your mates to share music between yourselves, with some useful " \
               "features I have like to <strong>collect Spotify links and displaying information</strong> about what " \
@@ -173,11 +175,11 @@ class HelpCommand(Command):
     """
     COMMAND = 'help'
 
-    def _get_response(self):
+    def _get_response(self) -> Tuple[Any, Optional[Any]]:
         return self._build_message(), None
 
     @staticmethod
-    def _build_message():
+    def _build_message() -> str:
         msg = "I give information about sent Spotify links in a chat. " \
               "I also give you a button to save this link and check it later! \n\n" \
               "Here's a list of the available commands: \n" \
@@ -196,10 +198,14 @@ class HelpCommand(Command):
               "-  /recommendations Returns a list of 10 recommended tracks. " \
               "based on the sent albums from the last week. \n" \
               "-  /np Now Playing. Returns track information about what you are currently playing in Last.fm. \n" \
-              "-  /collage Returns a collage of your most listened albums in a period. \n" \
-              "-  /topalbums Top Albums. Returns the Last.fm top albums of your user. \n" \
-              "-  /topartists Top Artists. Returns the Last.fm top artists of your user. \n" \
-              "-  /toptracks Top Tracks. Returns the Last.fm top tracks of your user. \n" \
+              "-  /collage [rows] [cols] [period](7day 'default'/1month/3month/6month/12month/overall) " \
+              "Returns a collage of your most listened albums in a period. \n" \
+              "-  /topalbums [period](7day 'default'/1month/3month/6month/12month/overall) " \
+              "Top Albums. Returns the Last.fm top albums of your user. \n" \
+              "-  /topartists [period](7day 'default'/1month/3month/6month/12month/overall) " \
+              "Top Artists. Returns the Last.fm top artists of your user. \n" \
+              "-  /toptracks [period](7day 'default'/1month/3month/6month/12month/overall) " \
+              "Top Tracks. Returns the Last.fm top tracks of your user. \n" \
               "-  /lastfmset username Sets a Last.fm username to your Telegram user. \n" \
               "-  /stats Retrieves an user list with a links counter for the current chat. \n" \
               "-  @music_bucket_bot artist|album|track name Search for an artist, an album or a track. " \
@@ -221,7 +227,7 @@ class MusicCommand(Command):
         super().__init__(update, context)
         self.telegram_api_client = TelegramAPIClient()
 
-    def _get_response(self):
+    def _get_response(self) -> Tuple[Any, Optional[Any]]:
         if self.args:
             links = self._get_links_from_user()
         else:
@@ -230,7 +236,7 @@ class MusicCommand(Command):
         return self._build_message(last_week_links), None
 
     @staticmethod
-    def _build_message(last_week_links):
+    def _build_message(last_week_links) -> str:
         msg = '<strong>Music from the last week:</strong> \n'
         for user, sent_links in last_week_links.items():
             msg += '- {} <strong>{}:</strong>\n'.format(emojis.EMOJI_USER, user)
@@ -246,14 +252,14 @@ class MusicCommand(Command):
             msg += '\n'
         return msg
 
-    def _get_links(self):
+    def _get_links(self) -> List[Dict]:
         links = self.telegram_api_client.get_sent_links(
             chat_id=self.update.message.chat_id,
             since_date=self.LAST_WEEK
         )
         return links
 
-    def _get_links_from_user(self):
+    def _get_links_from_user(self) -> List[Dict]:
         username = self.args[0]
         username = username.replace('@', '')
         links = self.telegram_api_client.get_sent_links(
@@ -264,7 +270,7 @@ class MusicCommand(Command):
         return links
 
     @staticmethod
-    def _group_links_by_user(links):
+    def _group_links_by_user(links) -> Dict:
         last_week_links = defaultdict(list)
         for link in links:
             last_week_links[
@@ -284,7 +290,7 @@ class MusicFromBeginningCommand(Command):
         super().__init__(update, context)
         self.telegram_api_client = TelegramAPIClient()
 
-    def _get_response(self):
+    def _get_response(self) -> Tuple[Any, Optional[Any]]:
         if self.args:
             links = self._get_links_from_user()
             all_time_links = self._group_links_by_user(links)
@@ -294,7 +300,7 @@ class MusicFromBeginningCommand(Command):
             return msg, None
 
     @staticmethod
-    def _build_message(all_time_links):
+    def _build_message(all_time_links) -> str:
         msg = '<strong>Music from the beginning of time:</strong> \n'
         for user, sent_links in all_time_links.items():
             msg += '- {} <strong>{}:</strong>\n'.format(emojis.EMOJI_USER, user)
@@ -311,7 +317,7 @@ class MusicFromBeginningCommand(Command):
             msg += '\n'
         return msg
 
-    def _get_links_from_user(self):
+    def _get_links_from_user(self) -> List[Dict]:
         username = self.args[0]
         username = username.replace('@', '')
         links = self.telegram_api_client.get_sent_links(
@@ -321,7 +327,7 @@ class MusicFromBeginningCommand(Command):
         return links
 
     @staticmethod
-    def _group_links_by_user(links):
+    def _group_links_by_user(links) -> Dict:
         all_time_links = defaultdict(list)
         for link in links:
             all_time_links[
@@ -342,12 +348,12 @@ class MyMusicCommand(Command):
         super().__init__(update, context)
         self.telegram_api_client = TelegramAPIClient()
 
-    def _get_response(self):
+    def _get_response(self) -> Tuple[Any, Optional[Any]]:
         all_time_links = self._get_all_time_links_from_user()
         return self._build_message(all_time_links), None
 
     @staticmethod
-    def _build_message(all_time_links):
+    def _build_message(all_time_links) -> str:
         msg = '<strong>Music sent in all your chats from the beginning of time:</strong> \n'
         for sent_link in all_time_links:
             link = sent_link.get('link')
@@ -365,7 +371,7 @@ class MyMusicCommand(Command):
         msg += '\n'
         return msg
 
-    def _get_all_time_links_from_user(self):
+    def _get_all_time_links_from_user(self) -> List[Dict]:
         links = self.telegram_api_client.get_sent_links(
             user_id=self.update.message.from_user.id
         )
@@ -385,7 +391,7 @@ class NowPlayingCommand(Command):
         self.lastfm_api_client = LastfmAPIClient()
         self.spotify_api_client = SpotifyAPIClient()
 
-    def _get_response(self):
+    def _get_response(self) -> Tuple[Any, Optional[Any]]:
         now_playing_data = self.lastfm_api_client.get_now_playing(self.update.message.from_user.id)
         msg = self._build_message(now_playing_data)
 
@@ -397,7 +403,7 @@ class NowPlayingCommand(Command):
             return msg, None
 
     @staticmethod
-    def _build_message(now_playing_data):
+    def _build_message(now_playing_data) -> str:
         lastfm_user = now_playing_data.get('lastfm_user')
         if not lastfm_user or not lastfm_user.get('username'):
             return f'There is no Last.fm username for your user. Please set your username with:\n' \
@@ -450,7 +456,7 @@ class CollageCommand(Command):
             self.reply(self.update, self.context, response, disable_web_page_preview=not self.WEB_PAGE_PREVIEW,
                        reply_markup=reply_markup)
 
-    def _get_response(self):
+    def _get_response(self) -> Tuple[Any, Optional[Any]]:
         try:
             collage_image_data = self.lastfm_api_client.get_collage(self.update.message.from_user.id, *self.args[0:3])
         except APIClientException:
@@ -466,7 +472,7 @@ class CollageCommand(Command):
                f'<i>/lastfmset username</i>'
 
     @property
-    def help_message(self):
+    def help_message(self) -> str:
         return 'Command usage: ' \
                '/collage <rows (max:5. Default: 5)> ' \
                '<cols (max:5. Default: 5)> ' \
@@ -484,12 +490,21 @@ class TopAlbumsCommand(Command):
         super().__init__(update, context)
         self.lastfm_api_client = LastfmAPIClient()
 
-    def _get_response(self):
-        top_albums_data = self.lastfm_api_client.get_top_albums(user_id=self.update.message.from_user.id)
+    def _get_response(self) -> Tuple[Any, Optional[Any]]:
+        if self.args:
+            period = self.args[0]
+            if not period in self.lastfm_api_client.PERIODS:
+                return self.help_message, None
+            top_albums_data = self.lastfm_api_client.get_top_albums(
+                user_id=self.update.message.from_user.id,
+                period=period
+            )
+        else:
+            top_albums_data = self.lastfm_api_client.get_top_albums(user_id=self.update.message.from_user.id)
         return self._build_message(top_albums_data), None
 
     @staticmethod
-    def _build_message(top_albums_data: {}) -> str:
+    def _build_message(top_albums_data: Dict) -> str:
         lastfm_user = top_albums_data.get('lastfm_user')
         if not lastfm_user or not lastfm_user.get('username'):
             return f'There is no Last.fm username for your user. Please set your username with:\n' \
@@ -497,10 +512,14 @@ class TopAlbumsCommand(Command):
         top_albums = top_albums_data.get('top_albums', [])
         if not top_albums:
             return "You have not top albums"
-        msg = f"<strong>{lastfm_user.get('username')}</strong>'s top albums of last 7 days: \n"
+        msg = f"<strong>{lastfm_user.get('username')}</strong>'s top albums of the period: \n"
         for album in top_albums[:10]:
             msg += f"- {emojis.EMOJI_ALBUM} <strong>{album['artist']}</strong> - <strong>{album['title']}</strong>. {album['scrobbles']} scrobbles\n"
         return msg
+
+    @property
+    def help_message(self) -> str:
+        return "Command usage: /topalbums [period] (7day 'default'/1month/3month/6month/12month/overall)"
 
 
 class TopArtistsCommand(Command):
@@ -514,12 +533,21 @@ class TopArtistsCommand(Command):
         super().__init__(update, context)
         self.lastfm_api_client = LastfmAPIClient()
 
-    def _get_response(self):
-        top_artists_data = self.lastfm_api_client.get_top_artists(user_id=self.update.message.from_user.id)
+    def _get_response(self) -> Tuple[Any, Optional[Any]]:
+        if self.args:
+            period = self.args[0]
+            if period not in self.lastfm_api_client.PERIODS:
+                return self.help_message, None
+            top_artists_data = self.lastfm_api_client.get_top_artists(
+                user_id=self.update.message.from_user.id,
+                period=period
+            )
+        else:
+            top_artists_data = self.lastfm_api_client.get_top_artists(user_id=self.update.message.from_user.id)
         return self._build_message(top_artists_data), None
 
     @staticmethod
-    def _build_message(top_artists_data: {}) -> str:
+    def _build_message(top_artists_data: Dict) -> str:
         lastfm_user = top_artists_data.get('lastfm_user')
         if not lastfm_user or not lastfm_user.get('username'):
             return f'There is no Last.fm username for your user. Please set your username with:\n' \
@@ -527,10 +555,14 @@ class TopArtistsCommand(Command):
         top_artists = top_artists_data.get('top_artists', [])
         if not top_artists:
             return "You have not top artists"
-        msg = f"<strong>{lastfm_user.get('username')}</strong>'s top artists of last 7 days: \n"
+        msg = f"<strong>{lastfm_user.get('username')}</strong>'s top artists of the period: \n"
         for artist in top_artists[:10]:
             msg += f"- {emojis.EMOJI_ARTIST} <strong>{artist['name']}</strong>. {artist['scrobbles']} scrobbles\n"
         return msg
+
+    @property
+    def help_message(self) -> str:
+        return "Command usage: /topartists [period] (7day 'default'/1month/3month/6month/12month/overall)"
 
 
 class TopTracksCommand(Command):
@@ -544,12 +576,21 @@ class TopTracksCommand(Command):
         super().__init__(update, context)
         self.lastfm_api_client = LastfmAPIClient()
 
-    def _get_response(self):
-        top_tracks_data = self.lastfm_api_client.get_top_tracks(user_id=self.update.message.from_user.id)
+    def _get_response(self) -> Tuple[Any, Optional[Any]]:
+        if self.args:
+            period = self.args[0]
+            if period not in self.lastfm_api_client.PERIODS:
+                return self.help_message, None
+            top_tracks_data = self.lastfm_api_client.get_top_tracks(
+                user_id=self.update.message.from_user.id,
+                period=period
+            )
+        else:
+            top_tracks_data = self.lastfm_api_client.get_top_tracks(user_id=self.update.message.from_user.id)
         return self._build_message(top_tracks_data), None
 
     @staticmethod
-    def _build_message(top_tracks_data: {}) -> str:
+    def _build_message(top_tracks_data: Dict) -> str:
         lastfm_user = top_tracks_data.get('lastfm_user')
         if not lastfm_user or not lastfm_user.get('username'):
             return f'There is no Last.fm username for your user. Please set your username with:\n' \
@@ -557,10 +598,14 @@ class TopTracksCommand(Command):
         top_tracks = top_tracks_data.get('top_tracks', [])
         if not top_tracks:
             return "You have not top tracks"
-        msg = f"<strong>{lastfm_user.get('username')}</strong>'s top tracks of last 7 days: \n"
+        msg = f"<strong>{lastfm_user.get('username')}</strong>'s top tracks of the period: \n"
         for track in top_tracks[:10]:
             msg += f"- {emojis.EMOJI_ALBUM} <strong>{track['artist']}</strong> - <strong>{track['title']}</strong>. {track['scrobbles']} scrobbles\n"
         return msg
+
+    @property
+    def help_message(self) -> str:
+        return "Command usage: /toptracks [period] (7day 'default'/1month/3month/6month/12month/overall)"
 
 
 class LastFMSetCommand(Command):
@@ -575,16 +620,15 @@ class LastFMSetCommand(Command):
         self.telegram_api_client = TelegramAPIClient()
         self.lastfm_api_client = LastfmAPIClient()
 
-    def _get_response(self):
+    def _get_response(self) -> Tuple[Any, Optional[Any]]:
         lastfm_username = self._set_lastfm_username(self.update.message.from_user)
         return self._build_message(lastfm_username), None
 
-    def _build_message(self, lastfm_username):
-        if not lastfm_username:
-            return self._help_message()
-        return f"<strong>{lastfm_username}</strong>'s Last.fm username set correctly"
+    @staticmethod
+    def _help_message() -> str:
+        return 'Command usage: /lastfmset username'
 
-    def _set_lastfm_username(self, user):
+    def _set_lastfm_username(self, user: TgUser) -> Optional[str]:
         if not self.args:
             return None
         username = self.args[0]
@@ -593,9 +637,10 @@ class LastFMSetCommand(Command):
         lastfm_user = self.lastfm_api_client.set_lastfm_user(user.get('id'), username)
         return lastfm_user.get('username')
 
-    @staticmethod
-    def _help_message():
-        return 'Command usage: /lastfmset username'
+    def _build_message(self, lastfm_username: str) -> str:
+        if not lastfm_username:
+            return self._help_message()
+        return f"<strong>{lastfm_username}</strong>'s Last.fm username set correctly"
 
 
 class SavedLinksCommand(Command):
@@ -609,12 +654,12 @@ class SavedLinksCommand(Command):
         super().__init__(update, context)
         self.spotify_api_client = SpotifyAPIClient()
 
-    def _get_response(self):
+    def _get_response(self) -> Tuple[Any, Optional[Any]]:
         saved_links_response = self.spotify_api_client.get_saved_links(self.update.message.from_user.id)
         return self._build_message(saved_links_response), None
 
     @staticmethod
-    def _build_message(saved_links_response: {}):
+    def _build_message(saved_links_response: {}) -> str:
         if not saved_links_response:
             return 'You have not saved links'
 
@@ -640,7 +685,7 @@ class DeleteSavedLinksCommand(Command):
         super().__init__(update, context)
         self.spotify_api_client = SpotifyAPIClient()
 
-    def _get_response(self):
+    def _get_response(self) -> Tuple[Any, Optional[Any]]:
         keyboard = self._build_keyboard()
         if not keyboard:
             return 'You have not saved links', None
@@ -656,7 +701,7 @@ class DeleteSavedLinksCommand(Command):
 class FollowArtistMixin:
 
     @property
-    def not_following_any_artist_message(self):
+    def not_following_any_artist_message(self) -> str:
         return 'You are not following any artist'
 
 
@@ -672,11 +717,11 @@ class FollowedArtistsCommand(FollowArtistMixin, Command):
         self.telegram_api_client = TelegramAPIClient()
         self.spotify_api_client = SpotifyAPIClient()
 
-    def _get_response(self):
+    def _get_response(self) -> Tuple[Any, Optional[Any]]:
         followed_artists_response = self.spotify_api_client.get_followed_artists(self.update.message.from_user.id)
         return self._build_message(followed_artists_response), None
 
-    def _build_message(self, followed_artists_response):
+    def _build_message(self, followed_artists_response) -> str:
         if not followed_artists_response:
             return self.not_following_any_artist_message
 
@@ -701,7 +746,7 @@ class FollowArtistCommand(Command):
         self.spotify_api_client = SpotifyAPIClient()
         self.telegram_api_client = TelegramAPIClient()
 
-    def _get_response(self):
+    def _get_response(self) -> Tuple[Any, Optional[Any]]:
         if not self.args:
             return self.help_message, None
         url = self.args[0]
@@ -721,7 +766,7 @@ class FollowArtistCommand(Command):
             raise e
         return self._build_message(followed_artist_response), None
 
-    def _extract_artist_id_from_url(self, url: str) -> Artist:
+    def _extract_artist_id_from_url(self, url: str) -> str:
         url = self._url_cleaning_and_validations(url)
         return SpotifyUtils.get_entity_id_from_url(url)
 
@@ -735,15 +780,15 @@ class FollowArtistCommand(Command):
         return cleaned_url
 
     @property
-    def already_following_this_artist_message(self):
+    def already_following_this_artist_message(self) -> str:
         return 'You are already following this artist'
 
     @property
-    def error_invalid_link_message(self):
+    def error_invalid_link_message(self) -> str:
         return 'Invalid artist link'
 
     @property
-    def help_message(self):
+    def help_message(self) -> str:
         return 'Command usage:  /followartist spotify_artist_url'
 
     @staticmethod
@@ -765,7 +810,7 @@ class UnfollowArtistsCommand(FollowArtistMixin, Command):
         super().__init__(update, context)
         self.spotify_api_client = SpotifyAPIClient()
 
-    def _get_response(self):
+    def _get_response(self) -> Tuple[Any, Optional[Any]]:
         keyboard = self._build_keyboard()
         if not keyboard:
             return self.not_following_any_artist_message, None
@@ -789,7 +834,7 @@ class CheckArtistsNewMusicReleasesCommand(FollowArtistMixin, Command):
         super().__init__(update, context)
         self.spotify_api_client = SpotifyAPIClient()
 
-    def _get_response(self):
+    def _get_response(self) -> Tuple[Any, Optional[Any]]:
         new_music_releases_response = self.spotify_api_client.check_new_music_releases(self.update.message.from_user.id)
         if not new_music_releases_response:
             return self.no_new_music_message, None
@@ -797,7 +842,7 @@ class CheckArtistsNewMusicReleasesCommand(FollowArtistMixin, Command):
         return message
 
     @staticmethod
-    def _build_message(new_music_releases_response: []) -> str:
+    def _build_message(new_music_releases_response: List) -> str:
         msg = 'Found new music: \n'
         for new_album in new_music_releases_response:
             new_album_first_artist = new_album.get('artists')[0]
@@ -806,7 +851,7 @@ class CheckArtistsNewMusicReleasesCommand(FollowArtistMixin, Command):
         return msg
 
     @property
-    def no_new_music_message(self):
+    def no_new_music_message(self) -> str:
         return 'There is no new music of your followed artists'
 
 
@@ -821,12 +866,12 @@ class StatsCommand(Command):
         super().__init__(update, context)
         self.telegram_api_client = TelegramAPIClient()
 
-    def _get_response(self):
+    def _get_response(self) -> Tuple[Any, Optional[Any]]:
         stats = self.telegram_api_client.get_stats(self.update.message.chat_id)
         return self._build_message(stats), None
 
     @staticmethod
-    def _build_message(stats: {}):
+    def _build_message(stats: Dict) -> str:
         msg = '<strong>Links sent by the users from the beginning in this chat:</strong> \n'
         users = stats.get('users_with_chat_link_count', [])
         most_sent_genres = stats.get('most_sent_genres', [])

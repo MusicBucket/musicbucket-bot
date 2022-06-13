@@ -1,6 +1,7 @@
 import logging
 import time
 from enum import Enum
+from typing import List
 
 from telegram import ParseMode
 
@@ -39,6 +40,16 @@ class ReplyMixin:
             return
 
         # If the text is too large that has to be splitted into many messages
+        parts = self._split_message_in_parts(message)
+
+        for part in parts:
+            update.message.reply_text(part, disable_web_page_preview=True,
+                                      parse_mode=ParseMode.HTML)
+            time.sleep(1)
+        return
+
+    def _split_message_in_parts(self, message) -> List[str]:
+        """Splits the message into parts if necessary"""
         parts = []
         while len(message) > 0:
             if len(message) > self.MAX_RESPONSE_LENGTH:
@@ -53,12 +64,7 @@ class ReplyMixin:
             else:
                 parts.append(message)
                 break
-
-        for part in parts:
-            update.message.reply_text(part, disable_web_page_preview=True,
-                                      parse_mode=ParseMode.HTML)
-            time.sleep(1)
-        return
+        return parts
 
     @staticmethod
     def _reply_image(update, context, image, caption, reply_markup=None):
