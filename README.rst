@@ -82,8 +82,8 @@ Screenshots
 Installation
 ~~~~~~~~~~~~
 
--  Install ``pyenv`` and ``pipenv``
--  Do ``pipenv install`` inside the folder.
+-  Install ``pyenv`` and ``poetry``
+-  Do ``poetry install`` inside the folder.
 -  Copy the ``.env.dist`` file to ``.env`` and **fill the variables**
    with your Telegram and Spotify data.
 -  Execute ``python main.py``
