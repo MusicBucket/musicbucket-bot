@@ -620,13 +620,13 @@ class LastFMSetCommand(Command):
         self.telegram_api_client = TelegramAPIClient()
         self.lastfm_api_client = LastfmAPIClient()
 
+    @property
+    def help_message(self) -> str:
+        return 'Command usage: /lastfmset username'
+
     def _get_response(self) -> Tuple[Any, Optional[Any]]:
         lastfm_username = self._set_lastfm_username(self.update.message.from_user)
         return self._build_message(lastfm_username), None
-
-    @staticmethod
-    def _help_message() -> str:
-        return 'Command usage: /lastfmset username'
 
     def _set_lastfm_username(self, user: TgUser) -> Optional[str]:
         if not self.args:
@@ -639,7 +639,7 @@ class LastFMSetCommand(Command):
 
     def _build_message(self, lastfm_username: str) -> str:
         if not lastfm_username:
-            return self._help_message()
+            return self.help_message
         return f"<strong>{lastfm_username}</strong>'s Last.fm username set correctly"
 
 

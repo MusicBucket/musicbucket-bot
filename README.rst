@@ -1,7 +1,7 @@
 MusicBucket Bot
 ================
 
-.. |full_logo| image:: https://github.com/paurieraf/musicbucket-bot/blob/master/images/logos/musicbucket_bot_letter_logo_1229x2574.png?raw=True
+.. |full_logo| image:: https://github.com/musicbucket/musicbucket-bot/blob/main/images/logos/musicbucket_bot_letter_logo.png?raw=True
 
 |full_logo|
 
@@ -92,8 +92,7 @@ Installation
 Special thanks
 ~~~~~~~~~~~~~~
 
-- To Pablo I. for the logo.
-- To the Sonomada community and its group in Telegram (https://t.me/Sonomada_gang) where we use and test the bot actively and propose new features.
+To the Sonomada community and its group in Telegram (https://t.me/Sonomada_gang) where we use and test the bot actively and propose new features.
 
 
 License
