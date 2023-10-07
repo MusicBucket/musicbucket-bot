@@ -5,7 +5,8 @@ from typing import Dict, Optional, Tuple, Any, List
 
 from telegram import Update
 from telegram import User as TgUser
-from telegram.ext import CallbackContext
+from telegram.ext import CallbackContext, ContextTypes
+from telegram.ext import CallbackContext, ContextTypes
 
 from bot.api_client.api_client import APIClientException
 from bot.api_client.lastfm_api_client import LastfmAPIClient
@@ -15,7 +16,8 @@ from bot.buttons import DeleteSavedLinkButton, UnfollowArtistButton
 from bot import emojis
 from bot.logger import LoggerMixin
 from bot.messages import UrlProcessor
-from bot.models import Link, SaveTelegramEntityMixin, Artist
+from bot.models import Link, SaveTelegramEntityMixin, Artist, Album, Track, \
+    User
 from bot.music.music import LinkType
 from bot.music.spotify import SpotifyUtils
 from bot.reply import ReplyMixin, ReplyType
@@ -28,97 +30,115 @@ class CommandFactory:
     """Handles the execution of the commands"""
 
     @staticmethod
-    def run_start_command(update: Update, context: CallbackContext):
+    async def run_start_command(update: Update,
+                                context: ContextTypes.DEFAULT_TYPE):
         command = StartCommand(update, context)
-        command.run()
+        await command.run()
 
     @staticmethod
-    def run_help_command(update: Update, context: CallbackContext):
+    async def run_help_command(update: Update,
+                               context: ContextTypes.DEFAULT_TYPE):
         command = HelpCommand(update, context)
-        command.run()
+        await command.run()
 
     @staticmethod
-    def run_music_command(update: Update, context: CallbackContext):
+    async def run_music_command(update: Update,
+                                context: ContextTypes.DEFAULT_TYPE):
         command = MusicCommand(update, context)
-        command.run()
+        await command.run()
 
     @staticmethod
-    def run_music_from_beginning_command(update: Update, context: CallbackContext):
+    async def run_music_from_beginning_command(update: Update,
+                                               context: ContextTypes.DEFAULT_TYPE):
         command = MusicFromBeginningCommand(update, context)
-        command.run()
+        await command.run()
 
     @staticmethod
-    def run_my_music_command(update: Update, context: CallbackContext):
+    async def run_my_music_command(update: Update,
+                                   context: ContextTypes.DEFAULT_TYPE):
         if update.message.chat.type != 'group' and update.message.chat.type != 'supergroup':
             command = MyMusicCommand(update, context)
-            command.run()
+            await command.run()
 
     @staticmethod
-    def run_now_playing_command(update: Update, context: CallbackContext):
+    async def run_now_playing_command(update: Update,
+                                      context: ContextTypes.DEFAULT_TYPE):
         command = NowPlayingCommand(update, context)
-        command.run()
+        await command.run()
 
     @staticmethod
-    def run_collage_command(update: Update, context: CallbackContext):
+    async def run_collage_command(update: Update,
+                                  context: ContextTypes.DEFAULT_TYPE):
         command = CollageCommand(update, context)
         command.run()
 
     @staticmethod
-    def run_top_albums_command(update: Update, context: CallbackContext):
+    async def run_top_albums_command(update: Update,
+                                     context: ContextTypes.DEFAULT_TYPE):
         command = TopAlbumsCommand(update, context)
-        command.run()
+        await command.run()
 
     @staticmethod
-    def run_top_artists_command(update: Update, context: CallbackContext):
+    async def run_top_artists_command(update: Update,
+                                      context: ContextTypes.DEFAULT_TYPE):
         command = TopArtistsCommand(update, context)
-        command.run()
+        await command.run()
 
     @staticmethod
-    def run_top_tracks_command(update: Update, context: CallbackContext):
+    async def run_top_tracks_command(update: Update,
+                                     context: ContextTypes.DEFAULT_TYPE):
         command = TopTracksCommand(update, context)
-        command.run()
+        await command.run()
 
     @staticmethod
-    def run_lastfmset_command(update: Update, context: CallbackContext):
+    async def run_lastfmset_command(update: Update,
+                                    context: ContextTypes.DEFAULT_TYPE):
         command = LastFMSetCommand(update, context)
-        command.run()
+        await command.run()
 
     @staticmethod
-    def run_saved_links_command(update: Update, context: CallbackContext):
+    async def run_saved_links_command(update: Update,
+                                      context: ContextTypes.DEFAULT_TYPE):
         command = SavedLinksCommand(update, context)
-        command.run()
+        await command.run()
 
     @staticmethod
-    def run_delete_saved_links_command(update: Update, context: CallbackContext):
+    async def run_delete_saved_links_command(update: Update,
+                                             context: ContextTypes.DEFAULT_TYPE):
         if update.message.chat.type != 'group' and update.message.chat.type != 'supergroup':
             command = DeleteSavedLinksCommand(update, context)
-            command.run()
+            await command.run()
 
     @staticmethod
-    def run_followed_artists_command(update: Update, context: CallbackContext):
+    async def run_followed_artists_command(update: Update,
+                                           context: ContextTypes.DEFAULT_TYPE):
         command = FollowedArtistsCommand(update, context)
-        command.run()
+        await command.run()
 
     @staticmethod
-    def run_follow_artist_command(update: Update, context: CallbackContext):
+    async def run_follow_artist_command(update: Update,
+                                        context: ContextTypes.DEFAULT_TYPE):
         command = FollowArtistCommand(update, context)
-        command.run()
+        await command.run()
 
     @staticmethod
-    def run_unfollow_artists_command(update: Update, context: CallbackContext):
+    async def run_unfollow_artists_command(update: Update,
+                                           context: ContextTypes.DEFAULT_TYPE):
         if update.message.chat.type != 'group' and update.message.chat.type != 'supergroup':
             command = UnfollowArtistsCommand(update, context)
-            command.run()
+            await command.run()
 
     @staticmethod
-    def run_check_artist_new_music_releases_command(update: Update, context: CallbackContext):
+    async def run_check_artist_new_music_releases_command(update: Update,
+                                                          context: ContextTypes.DEFAULT_TYPE):
         command = CheckArtistsNewMusicReleasesCommand(update, context)
-        command.run()
+        await command.run()
 
     @staticmethod
-    def run_stats_command(update: Update, context: CallbackContext):
+    async def run_stats_command(update: Update,
+                                context: ContextTypes.DEFAULT_TYPE):
         command = StatsCommand(update, context)
-        command.run()
+        await command.run()
 
 
 class Command(ReplyMixin, SaveTelegramEntityMixin, LoggerMixin):
@@ -131,19 +151,24 @@ class Command(ReplyMixin, SaveTelegramEntityMixin, LoggerMixin):
         self.context = context
         self.args = context.args or []
 
-    def run(self):
+    async def run(self):
         self.log_command(self.COMMAND, self.args, self.update)
-        response, reply_markup = self.get_response()
-        self.reply(self.update, self.context, response, disable_web_page_preview=not self.WEB_PAGE_PREVIEW,
-                   reply_markup=reply_markup)
+        response, reply_markup = await self.get_response()
+        await self.reply(
+            self.update,
+            self.context,
+            response,
+            disable_web_page_preview=not self.WEB_PAGE_PREVIEW,
+            reply_markup=reply_markup
+        )
 
-    def get_response(self) -> Tuple[Any, Optional[Any]]:
+    async def get_response(self):
         if self.SAVE_USER_AND_CHAT:
-            self.save_user(self.update.message.from_user)
-            self.save_chat(self.update.message.chat)
-        return self._get_response()
+            await self.save_user(self.update.message.from_user)
+            await self.save_chat(self.update.message.chat)
+        return await self._get_response()
 
-    def _get_response(self):
+    async def _get_response(self):
         raise NotImplementedError()
 
 
@@ -154,7 +179,7 @@ class StartCommand(Command):
     """
     COMMAND = 'start'
 
-    def _get_response(self) -> Tuple[Any, Optional[Any]]:
+    async def _get_response(self) -> Tuple[Any, Optional[Any]]:
         return self._build_message(), None
 
     @staticmethod
@@ -175,7 +200,7 @@ class HelpCommand(Command):
     """
     COMMAND = 'help'
 
-    def _get_response(self) -> Tuple[Any, Optional[Any]]:
+    async def _get_response(self) -> Tuple[Any, Optional[Any]]:
         return self._build_message(), None
 
     @staticmethod
@@ -227,7 +252,7 @@ class MusicCommand(Command):
         super().__init__(update, context)
         self.telegram_api_client = TelegramAPIClient()
 
-    def _get_response(self) -> Tuple[Any, Optional[Any]]:
+    async def _get_response(self) -> Tuple[Any, Optional[Any]]:
         if self.args:
             links = self._get_links_from_user()
         else:
@@ -239,7 +264,10 @@ class MusicCommand(Command):
     def _build_message(last_week_links) -> str:
         msg = '<strong>Music from the last week:</strong> \n'
         for user, sent_links in last_week_links.items():
-            msg += '- {} <strong>{}:</strong>\n'.format(emojis.EMOJI_USER, user)
+            msg += '- {} <strong>{}:</strong>\n'.format(
+                User.EMOJI,
+                user
+            )
             for sent_link in sent_links:
                 link = sent_link.get('link')
                 genres = Link.get_genres(link)
@@ -274,7 +302,8 @@ class MusicCommand(Command):
         last_week_links = defaultdict(list)
         for link in links:
             last_week_links[
-                link.get('sent_by').get('username') if link.get('sent_by').get('username') else link.get('sent_by').get(
+                link.get('sent_by').get('username') if link.get('sent_by').get(
+                    'username') else link.get('sent_by').get(
                     'first_name')].append(link)
         return dict(last_week_links)
 
@@ -290,7 +319,7 @@ class MusicFromBeginningCommand(Command):
         super().__init__(update, context)
         self.telegram_api_client = TelegramAPIClient()
 
-    def _get_response(self) -> Tuple[Any, Optional[Any]]:
+    async def _get_response(self) -> Tuple[Any, Optional[Any]]:
         if self.args:
             links = self._get_links_from_user()
             all_time_links = self._group_links_by_user(links)
@@ -303,7 +332,7 @@ class MusicFromBeginningCommand(Command):
     def _build_message(all_time_links) -> str:
         msg = '<strong>Music from the beginning of time:</strong> \n'
         for user, sent_links in all_time_links.items():
-            msg += '- {} <strong>{}:</strong>\n'.format(emojis.EMOJI_USER, user)
+            msg += '- {} <strong>{}:</strong>\n'.format(User.EMOJI, user)
             for sent_link in sent_links:
                 link = sent_link.get('link')
                 genres = Link.get_genres(link)
@@ -331,7 +360,8 @@ class MusicFromBeginningCommand(Command):
         all_time_links = defaultdict(list)
         for link in links:
             all_time_links[
-                link.get('sent_by').get('username') if link.get('sent_by').get('username') else link.get('sent_by').get(
+                link.get('sent_by').get('username') if link.get('sent_by').get(
+                    'username') else link.get('sent_by').get(
                     'first_name')].append(link)
         return dict(all_time_links)
 
@@ -348,7 +378,7 @@ class MyMusicCommand(Command):
         super().__init__(update, context)
         self.telegram_api_client = TelegramAPIClient()
 
-    def _get_response(self) -> Tuple[Any, Optional[Any]]:
+    async def _get_response(self) -> Tuple[Any, Optional[Any]]:
         all_time_links = self._get_all_time_links_from_user()
         return self._build_message(all_time_links), None
 
@@ -361,7 +391,8 @@ class MyMusicCommand(Command):
             msg += '    {}  {} <a href="{}">{}</a> {}\n'.format(
                 emojis.get_music_emoji(link.get('type')),
                 '[{}@{}]'.format(
-                    datetime.datetime.fromisoformat(sent_link.get('sent_at')).strftime(OUTPUT_DATE_FORMAT),
+                    datetime.datetime.fromisoformat(
+                        sent_link.get('sent_at')).strftime(OUTPUT_DATE_FORMAT),
                     sent_link.get('chat').get('name')
                 ),
                 link.get('url'),
@@ -391,13 +422,14 @@ class NowPlayingCommand(Command):
         self.lastfm_api_client = LastfmAPIClient()
         self.spotify_api_client = SpotifyAPIClient()
 
-    def _get_response(self) -> Tuple[Any, Optional[Any]]:
-        now_playing_data = self.lastfm_api_client.get_now_playing(self.update.message.from_user.id)
+    async def _get_response(self) -> Tuple[Any, Optional[Any]]:
+        now_playing_data = self.lastfm_api_client.get_now_playing(
+            self.update.message.from_user.id)
         msg = self._build_message(now_playing_data)
 
         url_candidate = now_playing_data.get('url_candidate')
         if url_candidate:
-            self._save_link(url_candidate)
+            await self._save_link(url_candidate)
             return None, None
         else:
             return msg, None
@@ -417,18 +449,18 @@ class NowPlayingCommand(Command):
         cover = now_playing_data.get('cover')
 
         msg = f"<b>{lastfm_user.get('username')}</b>'s now playing:\n"
-        msg += f"{emojis.EMOJI_TRACK} {track_name}\n"
+        msg += f"{Track.EMOJI} {track_name}\n"
         if album_name:
-            msg += f"{emojis.EMOJI_ALBUM} {album_name}\n"
+            msg += f"{Album.EMOJI} {album_name}\n"
         if artist_name:
-            msg += f"{emojis.EMOJI_ARTIST} {artist_name}\n"
+            msg += f"{Artist.EMOJI} {artist_name}\n"
         if cover:
             msg += f"<a href='{cover}'>&#8205;</a>"
         return msg
 
-    def _save_link(self, url):
+    async def _save_link(self, url):
         url_processor = UrlProcessor(self.update, self.context, url, self)
-        url_processor.process()
+        await url_processor.process()
 
 
 class CollageCommand(Command):
@@ -448,17 +480,20 @@ class CollageCommand(Command):
         response, reply_markup = self.get_response()
         if type(response) == bytes:
             # we have an image
-            self.reply(self.update, self.context, message="", image=response, reply_type=ReplyType.IMAGE,
+            self.reply(self.update, self.context, message="", image=response,
+                       reply_type=ReplyType.IMAGE,
                        disable_web_page_preview=not self.WEB_PAGE_PREVIEW,
                        reply_markup=reply_markup)
         else:
             # we have an error message
-            self.reply(self.update, self.context, response, disable_web_page_preview=not self.WEB_PAGE_PREVIEW,
+            self.reply(self.update, self.context, response,
+                       disable_web_page_preview=not self.WEB_PAGE_PREVIEW,
                        reply_markup=reply_markup)
 
-    def _get_response(self) -> Tuple[Any, Optional[Any]]:
+    async def _get_response(self) -> Tuple[Any, Optional[Any]]:
         try:
-            collage_image_data = self.lastfm_api_client.get_collage(self.update.message.from_user.id, *self.args[0:3])
+            collage_image_data = self.lastfm_api_client.get_collage(
+                self.update.message.from_user.id, *self.args[0:3])
         except APIClientException:
             # TODO: Check if the APIClientException is a 404
             return self._build_message(), None
@@ -490,7 +525,7 @@ class TopAlbumsCommand(Command):
         super().__init__(update, context)
         self.lastfm_api_client = LastfmAPIClient()
 
-    def _get_response(self) -> Tuple[Any, Optional[Any]]:
+    async def _get_response(self) -> Tuple[Any, Optional[Any]]:
         if self.args:
             period = self.args[0]
             if not period in self.lastfm_api_client.PERIODS:
@@ -500,7 +535,8 @@ class TopAlbumsCommand(Command):
                 period=period
             )
         else:
-            top_albums_data = self.lastfm_api_client.get_top_albums(user_id=self.update.message.from_user.id)
+            top_albums_data = self.lastfm_api_client.get_top_albums(
+                user_id=self.update.message.from_user.id)
         return self._build_message(top_albums_data), None
 
     @staticmethod
@@ -514,7 +550,7 @@ class TopAlbumsCommand(Command):
             return "You have not top albums"
         msg = f"<strong>{lastfm_user.get('username')}</strong>'s top albums of the period: \n"
         for album in top_albums[:10]:
-            msg += f"- {emojis.EMOJI_ALBUM} <strong>{album['artist']}</strong> - <strong>{album['title']}</strong>. {album['scrobbles']} scrobbles\n"
+            msg += f"- {Album.EMOJI} <strong>{album['artist']}</strong> - <strong>{album['title']}</strong>. {album['scrobbles']} scrobbles\n"
         return msg
 
     @property
@@ -533,7 +569,7 @@ class TopArtistsCommand(Command):
         super().__init__(update, context)
         self.lastfm_api_client = LastfmAPIClient()
 
-    def _get_response(self) -> Tuple[Any, Optional[Any]]:
+    async def _get_response(self) -> Tuple[Any, Optional[Any]]:
         if self.args:
             period = self.args[0]
             if period not in self.lastfm_api_client.PERIODS:
@@ -543,7 +579,8 @@ class TopArtistsCommand(Command):
                 period=period
             )
         else:
-            top_artists_data = self.lastfm_api_client.get_top_artists(user_id=self.update.message.from_user.id)
+            top_artists_data = self.lastfm_api_client.get_top_artists(
+                user_id=self.update.message.from_user.id)
         return self._build_message(top_artists_data), None
 
     @staticmethod
@@ -557,7 +594,7 @@ class TopArtistsCommand(Command):
             return "You have not top artists"
         msg = f"<strong>{lastfm_user.get('username')}</strong>'s top artists of the period: \n"
         for artist in top_artists[:10]:
-            msg += f"- {emojis.EMOJI_ARTIST} <strong>{artist['name']}</strong>. {artist['scrobbles']} scrobbles\n"
+            msg += f"- {Artist.EMOJI} <strong>{artist['name']}</strong>. {artist['scrobbles']} scrobbles\n"
         return msg
 
     @property
@@ -576,7 +613,7 @@ class TopTracksCommand(Command):
         super().__init__(update, context)
         self.lastfm_api_client = LastfmAPIClient()
 
-    def _get_response(self) -> Tuple[Any, Optional[Any]]:
+    async def _get_response(self) -> Tuple[Any, Optional[Any]]:
         if self.args:
             period = self.args[0]
             if period not in self.lastfm_api_client.PERIODS:
@@ -586,7 +623,8 @@ class TopTracksCommand(Command):
                 period=period
             )
         else:
-            top_tracks_data = self.lastfm_api_client.get_top_tracks(user_id=self.update.message.from_user.id)
+            top_tracks_data = self.lastfm_api_client.get_top_tracks(
+                user_id=self.update.message.from_user.id)
         return self._build_message(top_tracks_data), None
 
     @staticmethod
@@ -600,7 +638,7 @@ class TopTracksCommand(Command):
             return "You have not top tracks"
         msg = f"<strong>{lastfm_user.get('username')}</strong>'s top tracks of the period: \n"
         for track in top_tracks[:10]:
-            msg += f"- {emojis.EMOJI_ALBUM} <strong>{track['artist']}</strong> - <strong>{track['title']}</strong>. {track['scrobbles']} scrobbles\n"
+            msg += f"- {Album.EMOJI} <strong>{track['artist']}</strong> - <strong>{track['title']}</strong>. {track['scrobbles']} scrobbles\n"
         return msg
 
     @property
@@ -624,8 +662,9 @@ class LastFMSetCommand(Command):
     def help_message(self) -> str:
         return 'Command usage: /lastfmset username'
 
-    def _get_response(self) -> Tuple[Any, Optional[Any]]:
-        lastfm_username = self._set_lastfm_username(self.update.message.from_user)
+    async def _get_response(self) -> Tuple[Any, Optional[Any]]:
+        lastfm_username = self._set_lastfm_username(
+            self.update.message.from_user)
         return self._build_message(lastfm_username), None
 
     def _set_lastfm_username(self, user: TgUser) -> Optional[str]:
@@ -634,7 +673,8 @@ class LastFMSetCommand(Command):
         username = self.args[0]
         username = username.replace('@', '')
         user = self.telegram_api_client.create_user(user)
-        lastfm_user = self.lastfm_api_client.set_lastfm_user(user.get('id'), username)
+        lastfm_user = self.lastfm_api_client.set_lastfm_user(user.get('id'),
+                                                             username)
         return lastfm_user.get('username')
 
     def _build_message(self, lastfm_username: str) -> str:
@@ -654,8 +694,9 @@ class SavedLinksCommand(Command):
         super().__init__(update, context)
         self.spotify_api_client = SpotifyAPIClient()
 
-    def _get_response(self) -> Tuple[Any, Optional[Any]]:
-        saved_links_response = self.spotify_api_client.get_saved_links(self.update.message.from_user.id)
+    async def _get_response(self) -> Tuple[Any, Optional[Any]]:
+        saved_links_response = self.spotify_api_client.get_saved_links(
+            self.update.message.from_user.id)
         return self._build_message(saved_links_response), None
 
     @staticmethod
@@ -685,14 +726,15 @@ class DeleteSavedLinksCommand(Command):
         super().__init__(update, context)
         self.spotify_api_client = SpotifyAPIClient()
 
-    def _get_response(self) -> Tuple[Any, Optional[Any]]:
+    async def _get_response(self) -> Tuple[Any, Optional[Any]]:
         keyboard = self._build_keyboard()
         if not keyboard:
             return 'You have not saved links', None
         return 'Choose a saved link to delete:', keyboard
 
     def _build_keyboard(self):
-        saved_links_response = self.spotify_api_client.get_saved_links(self.update.message.from_user.id)
+        saved_links_response = self.spotify_api_client.get_saved_links(
+            self.update.message.from_user.id)
         if not saved_links_response:
             return None
         return DeleteSavedLinkButton.get_keyboard_markup(saved_links_response)
@@ -717,8 +759,9 @@ class FollowedArtistsCommand(FollowArtistMixin, Command):
         self.telegram_api_client = TelegramAPIClient()
         self.spotify_api_client = SpotifyAPIClient()
 
-    def _get_response(self) -> Tuple[Any, Optional[Any]]:
-        followed_artists_response = self.spotify_api_client.get_followed_artists(self.update.message.from_user.id)
+    async def _get_response(self) -> Tuple[Any, Optional[Any]]:
+        followed_artists_response = self.spotify_api_client.get_followed_artists(
+            self.update.message.from_user.id)
         return self._build_message(followed_artists_response), None
 
     def _build_message(self, followed_artists_response) -> str:
@@ -728,7 +771,7 @@ class FollowedArtistsCommand(FollowArtistMixin, Command):
         msg = '<strong>Following artists:</strong> \n'
         for followed_artist in followed_artists_response:
             artist = followed_artist.get('artist')
-            msg += f'- {emojis.EMOJI_ARTIST} ' \
+            msg += f'- {Artist.EMOJI} ' \
                    f'<a href="{artist.get("url")}">{artist.get("name")}</a> ' \
                    f'Followed at: {datetime.datetime.fromisoformat(followed_artist.get("followed_at")).strftime(OUTPUT_DATE_FORMAT)}\n'
         return msg
@@ -746,7 +789,7 @@ class FollowArtistCommand(Command):
         self.spotify_api_client = SpotifyAPIClient()
         self.telegram_api_client = TelegramAPIClient()
 
-    def _get_response(self) -> Tuple[Any, Optional[Any]]:
+    async def _get_response(self) -> Tuple[Any, Optional[Any]]:
         if not self.args:
             return self.help_message, None
         url = self.args[0]
@@ -758,7 +801,8 @@ class FollowArtistCommand(Command):
         user = self.save_user(self.update.message.from_user)
         artist = self.spotify_api_client.get_artist(spotify_artist_id)
         try:
-            followed_artist_response = self.spotify_api_client.create_followed_artist(artist.get('id'), user.get('id'))
+            followed_artist_response = self.spotify_api_client.create_followed_artist(
+                artist.get('id'), user.get('id'))
         except APIClientException as e:
             response = e.args[0].response
             if response.status_code == 400 and "unique" in response.text:
@@ -810,14 +854,15 @@ class UnfollowArtistsCommand(FollowArtistMixin, Command):
         super().__init__(update, context)
         self.spotify_api_client = SpotifyAPIClient()
 
-    def _get_response(self) -> Tuple[Any, Optional[Any]]:
+    async def _get_response(self) -> Tuple[Any, Optional[Any]]:
         keyboard = self._build_keyboard()
         if not keyboard:
             return self.not_following_any_artist_message, None
         return 'Choose an artist to unfollow:', keyboard
 
     def _build_keyboard(self):
-        followed_artists = self.spotify_api_client.get_followed_artists(self.update.message.from_user.id)
+        followed_artists = self.spotify_api_client.get_followed_artists(
+            self.update.message.from_user.id)
         if not followed_artists:
             return None
         return UnfollowArtistButton.get_keyboard_markup(followed_artists)
@@ -834,8 +879,9 @@ class CheckArtistsNewMusicReleasesCommand(FollowArtistMixin, Command):
         super().__init__(update, context)
         self.spotify_api_client = SpotifyAPIClient()
 
-    def _get_response(self) -> Tuple[Any, Optional[Any]]:
-        new_music_releases_response = self.spotify_api_client.check_new_music_releases(self.update.message.from_user.id)
+    async def _get_response(self) -> Tuple[Any, Optional[Any]]:
+        new_music_releases_response = self.spotify_api_client.check_new_music_releases(
+            self.update.message.from_user.id)
         if not new_music_releases_response:
             return self.no_new_music_message, None
         message = self._build_message(new_music_releases_response), None
@@ -866,7 +912,7 @@ class StatsCommand(Command):
         super().__init__(update, context)
         self.telegram_api_client = TelegramAPIClient()
 
-    def _get_response(self) -> Tuple[Any, Optional[Any]]:
+    async def _get_response(self) -> Tuple[Any, Optional[Any]]:
         stats = self.telegram_api_client.get_stats(self.update.message.chat_id)
         return self._build_message(stats), None
 
@@ -877,7 +923,7 @@ class StatsCommand(Command):
         most_sent_genres = stats.get('most_sent_genres', [])
         for user in users:
             msg += '- {} <strong>{}:</strong> {}\n'.format(
-                emojis.EMOJI_USER,
+                User.EMOJI,
                 user.get('username') or user.get('first_name'),
                 user.get('sent_links_chat__count')
             )

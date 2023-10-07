@@ -1,17 +1,11 @@
-from emoji import emojize
-
+from bot.models import Artist, Track, Album
 from bot.music.music import LinkType
-
-EMOJI_USER = emojize(':baby:', use_aliases=True)
-EMOJI_ARTIST = emojize(':busts_in_silhouette:', use_aliases=True)
-EMOJI_ALBUM = emojize(':cd:', use_aliases=True)
-EMOJI_TRACK = emojize(':musical_note:', use_aliases=True)
 
 
 def get_music_emoji(link_type: str):
     if link_type == LinkType.ARTIST.value:
-        return EMOJI_ARTIST
+        return Artist.EMOJI
     elif link_type == LinkType.ALBUM.value:
-        return EMOJI_ALBUM
+        return Album.EMOJI
     elif link_type == LinkType.TRACK.value:
-        return EMOJI_TRACK
+        return Track.EMOJI
