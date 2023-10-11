@@ -24,7 +24,7 @@ class SaveLinkButton(BaseButton):
     CALLBACK_NAME = 'save_link'
 
     @classmethod
-    def handle(cls, update: Update, context: CallbackContext):
+    async def handle(cls, update: Update, context: CallbackContext):
         """Handles the pulsation of the button"""
         query = update.callback_query
         link_id = cls.get_callback_data(query.data)
@@ -57,13 +57,13 @@ class DeleteSavedLinkButton(BaseButton):
     CALLBACK_NAME = 'delete_saved_link'
 
     @classmethod
-    def handle(cls, update: Update, context: CallbackContext):
+    async def handle(cls, update: Update, context: CallbackContext):
         """Handles the pulsation of the button"""
         query = update.callback_query
         saved_link_id = cls.get_callback_data(query.data)
         if saved_link_id:
             SpotifyAPIClient().delete_saved_link(saved_link_id)
-        context.bot.edit_message_reply_markup(
+        await context.bot.edit_message_reply_markup(
             chat_id=query.message.chat_id,
             message_id=query.message.message_id
         )
@@ -89,13 +89,13 @@ class UnfollowArtistButton(BaseButton):
     CALLBACK_NAME = 'unfollow_artist'
 
     @classmethod
-    def handle(cls, update: Update, context: CallbackContext):
+    async def handle(cls, update: Update, context: CallbackContext):
         """Handles the pulsation of the button"""
         query = update.callback_query
         followed_artist_id = cls.get_callback_data(query.data)
         if followed_artist_id:
             SpotifyAPIClient().delete_followed_artist(followed_artist_id)
-        context.bot.edit_message_reply_markup(
+        await context.bot.edit_message_reply_markup(
             chat_id=query.message.chat_id,
             message_id=query.message.message_id
         )
