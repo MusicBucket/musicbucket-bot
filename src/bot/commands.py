@@ -70,7 +70,7 @@ class CommandFactory:
     async def run_collage_command(update: Update,
                                   context: ContextTypes.DEFAULT_TYPE):
         command = CollageCommand(update, context)
-        command.run()
+        await command.run()
 
     @staticmethod
     async def run_top_albums_command(update: Update,
@@ -474,19 +474,19 @@ class CollageCommand(Command):
         super().__init__(update, context)
         self.lastfm_api_client = LastfmAPIClient()
 
-    def run(self):
+    async def run(self):
         """Need to override the method because the response type must be an Image"""
         self.log_command(self.COMMAND, self.args, self.update)
-        response, reply_markup = self.get_response()
+        response, reply_markup = await self.get_response()
         if type(response) == bytes:
             # we have an image
-            self.reply(self.update, self.context, message="", image=response,
+            await self.reply(self.update, self.context, message="", image=response,
                        reply_type=ReplyType.IMAGE,
                        disable_web_page_preview=not self.WEB_PAGE_PREVIEW,
                        reply_markup=reply_markup)
         else:
             # we have an error message
-            self.reply(self.update, self.context, response,
+            await self.reply(self.update, self.context, response,
                        disable_web_page_preview=not self.WEB_PAGE_PREVIEW,
                        reply_markup=reply_markup)
 
