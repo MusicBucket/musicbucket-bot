@@ -13,16 +13,12 @@ log = logging.getLogger(__name__)
 class SearchInline(LoggerMixin):
     INLINE = 'search'
 
-    def __init__(self, update: Update, context: CallbackContext):
-        self.update = update
-        self.context = context
-        self.spotify_api_client = SpotifyAPIClient()
-        self._perform_search()
-
-    def _perform_search(self):
-        self.log_inline(self.INLINE, self.update)
-        user_input = self.update.inline_query.query
-        entity_type = self._get_entity_type(user_input)
+    @classmethod
+    async def perform_search(cls, update: Update, context: CallbackContext):
+        cls.log_inline(cls.INLINE, update)
+        spotify_api_client = SpotifyAPIClient()
+        user_input = update.inline_query.query
+        entity_type = cls._get_entity_type(user_input)
         if not entity_type:
             return
 
@@ -30,15 +26,18 @@ class SearchInline(LoggerMixin):
         results = []
         if len(query) >= 3:
             pass
-            search_results = self.spotify_api_client.search(query, entity_type)
-            results = self._build_results(search_results.get('results'), entity_type)
-        self._show_search_results(results)
-
-    def _show_search_results(self, results):
-        self.update.inline_query.answer(results)
+            search_results = spotify_api_client.search(query, entity_type)
+            results = await cls._build_results(
+                search_results.get('results'), entity_type
+            )
+        await cls._show_search_results(results, update)
 
     @staticmethod
-    def _build_results(search_results: [], entity_type: str) -> []:
+    async def _show_search_results(results: list, update: Update):
+        await update.inline_query.answer(results)
+
+    @staticmethod
+    async def _build_results(search_results: [], entity_type: str) -> []:
         results = []
         for result in search_results:
             thumb_url = ''
@@ -48,13 +47,17 @@ class SearchInline(LoggerMixin):
                 album = result['album']
                 artists = result['artists']
                 thumb_url = album['images'][0]['url']
-                description = '{} - {}'.format(', '.join(artist['name'] for artist in artists), album['name'])
+                description = '{} - {}'.format(
+                    ', '.join(artist['name'] for artist in artists),
+                    album['name'])
             elif entity_type == EntityType.ALBUM.value:
-                thumb_url = result['images'][0]['url'] if result['images'] else ''
+                thumb_url = result['images'][0]['url'] if result[
+                    'images'] else ''
                 artists = result['artists']
                 description = ', '.join(artist['name'] for artist in artists)
             elif entity_type == EntityType.ARTIST.value:
-                thumb_url = result['images'][0]['url'] if result['images'] else ''
+                thumb_url = result['images'][0]['url'] if result[
+                    'images'] else ''
                 description = ', '.join(result['genres'])
 
             results.append(
@@ -63,7 +66,9 @@ class SearchInline(LoggerMixin):
                     thumb_url=thumb_url,
                     title=result['name'],
                     description=description,
-                    input_message_content=InputTextMessageContent(result['external_urls']['spotify'])
+                    input_message_content=InputTextMessageContent(
+                        result['external_urls']['spotify']
+                    )
                 )
             )
         return results
