@@ -13,8 +13,14 @@ class LoggerMixin:
 
     @staticmethod
     def log_command(command, command_args, update):
-        user = update.message.from_user
-        chat = update.message.chat
+        if update.message:
+            user = update.message.from_user
+            chat = update.message.chat
+        elif update.edited_message:
+            user = update.edited_message.from_user
+            chat = update.edited_message.chat
+        else:
+            raise Exception(f"No message or edited_message: {update}")
 
         log.info(
             f'Command: "{command}". Args: "{", ".join(command_args)}". '
